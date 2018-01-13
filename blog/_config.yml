@@ -16,8 +16,8 @@
 title: Colin Powell 
 email: powelcol@oregonstate.edu 
 #description: >- Weekly observations regarding Oregon State's CS373, Defense Against the Dark Arts
-baseurl: "/blog" # the subpath of your site, e.g. /blog
-url: "https://colingrahmpowell.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "" # the base hostname & protocol for your site, e.g. http://example.com
 github_username: colingrahampowell 
 
 # Build settings
