@@ -15,7 +15,7 @@
 # in the templates via {{ site.myvariable }}.
 title: Colin Powell 
 email: colingrahampowell@gmail.com
-#description: > Weekly observations regarding Oregon State's CS373, Defense Against the Dark Arts.
+description: "Weekly observations regarding Oregon State's CS373, Defense Against the Dark Arts."
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "http://colingrahampowell.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 github_username: colingrahampowell 
