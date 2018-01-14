@@ -14,15 +14,15 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 title: Colin Powell 
-email: powelcol@oregonstate.edu 
-description: >- Weekly observations in Oregon State's CS373, Defense Against the Dark Arts
+email: colingrahampowell@gmail.com
+#description: >- Weekly observations regarding Oregon State's CS373, Defense Against the Dark Arts
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 github_username: colingrahampowell 
 
 # Build settings
 markdown: kramdown
-theme: minima
+theme: minimal
 plugins:
   - jekyll-feed
 
@@ -37,5 +37,3 @@ plugins:
 #   - vendor/cache/
 #   - vendor/gems/
 #   - vendor/ruby/
-
-github: [metadata]
