@@ -22,7 +22,7 @@ github_username: colingrahampowell
 
 # Build settings
 markdown: kramdown
-theme: minimal
+theme: minima
 plugins:
   - jekyll-feed
 
