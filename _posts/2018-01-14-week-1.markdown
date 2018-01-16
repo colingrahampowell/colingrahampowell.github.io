@@ -56,15 +56,25 @@ After watching Mr. Beek's lectures, I began work on Lab 1, static and dynamic an
 
 My analysis primarily used Process Monitor; I found its granularity the most useful for a detailed look into the exact operations and commands carried out by each process. The image below provides an example of this detail - note that each system call is logged as evil.exe attempts to receive `sun[1].htm` via TCP into a browser cache and copy it into the `C:\ntldrs` directory as `system.yf`. 
 
-![Process Monitor Output]({{"/assets/img/sun-system-yf.png"}})
+<figure>
+    <img src="/assets/img/sun-system-yf.png">
+    <figcaption>Downloading sun[1].htm, saving as C:\ntldrs\system.yf</figcaption>
+</figure>
+
+<!--![Process Monitor Output]({{"/assets/img/sun-system-yf.png"}})-->
 
 Although not mentioned in the lecture, I found the MS-DOS `fc` command especially useful. `fc` works very much like the Unix `diff` command - it analyzes the files passed as arguments, and returns any differences between them. This particular sample downloads files and copies them to various locations in the C:\ drive, so to determine which files were copied (and where they were copied to), I used `fc` on a pair of files that I suspected to be identical - if my suspicions were confirmed, I could infer that one of the files was a copy of the other. 
 
-McAfee's _FileInsight_ software was also used to analyze hex dumps of the malware-related executable files. _FileInsight_ is equipped with a string dump plugin, too, which is slightly more user-friendly than the similar tool found in Process Explorer. Its ability to interact with other plugins such as an XOR decryption tool proved to be quite handy later in the week, as is discussed below. 
+McAfee's _FileInsight_ software was also used to analyze hex dumps of the malware-related executable files. _FileInsight_ is equipped with a string dump plugin, too, which is slightly more user-friendly than the similar tool found in Process Explorer. Its ability to interact with other plugins - such as an XOR decryption tool - was quite helpful later in the week, as I worked through another of Mr. Beek's labs.
 
-With either _Process Explorer_ or _File Insight_, however, the string dumps were an invaluable tool. Observe how much data is present in _Process Explorer_'s string dump of evil.exe, and how much of a "head start" that this might give us in analyzing a specific malware sample:
+With either _Process Explorer_ or _File Insight_, however, the string dumps proved invaluable. Observe how much data is present in _Process Explorer_'s string dump of evil.exe, and how much of a "head start" that this might give us in analyzing a specific malware sample:
 
-![evil.exe strings dump]({{"/assets/img/evil-strings.png"}})
+<figure>
+    <img src="/assets/img/evil-strings.png">
+    <figcaption>String dump of evil.exe, as displayed by Process Explorer</figcaption>
+</figure>
+
+<!--![evil.exe strings dump]({{"/assets/img/evil-strings.png"}})-->
 
 In addition to helping me develop familiarity with malware analysis tools, the lab was informative in that the malware sample analyzed seemed to display a lot of "typical" malware attributes:
 - It modified the Run keys in the registry, ensuring that it runs at startup.
@@ -78,19 +88,34 @@ Once Lab 1 was complete, I continued this week's work by quickly working through
 
 A hex dump of the first sample immediately reveals that it is intended to be a portable executable (PE) file: the presence of MZ (`0x4D`) at the very beginning of the file gives this away. Further analysis reveals a number of decipherable strings present in the hex dump: this file does not appear to be encrypted. Using the Strings plugin provided in the software, I see `MSVBM60.DLL`, a reference to the MS Visual Basic 6.0 runtime DLL, a number of references to registry keys located at `Microsoft\Windows\CurrentVersion`, system calls such as `RegDeleteKeyA` and `RegCreateKeyA`, the string `music.exe`, and `temp.zip`. A screenshot of the Strings output in _FileInsight_ is below:
 
-![sample 1 strings]({{"/assets/img/sample-1-strings.png"}})
+<figure>
+    <img src="/assets/img/sample-1-strings.png">
+    <figcaption>String dump of Sample 1, as displayed by FileInsight</figcaption>
+</figure>
+
+<!--![sample 1 strings]({{"/assets/img/sample-1-strings.png"}})-->
 
 Based on a _purely_ static analysis of this sample, I can conclude that it is an executable, that it accesses and modifies the registry, and that its execution is somehow tied to filenames `music.exe` and `temp.zip`. In his lecture, Mr. Beek claims that we can't definitively know the intent of this malware based on this form of static analysis, and that further research would be necessary. I concur, although after a bit of research into the purpose of the `Software\Microsoft\Windows\CurrentVersion\Explorer` registry entries, it seems that this executable is, in part, intended to modify how Windows Explorer displays files and folders.
 
 I continued by analyzing a hex dump of the second file. Again, I noticed that this was a portable executable. When I dumped the strings, I found something very interesting:
 
-![sample 2 strings]({{"/assets/img/sample-2-strings.png"}})
+<figure>
+    <img src="/assets/img/sample-2-strings.png">
+    <figcaption>String dump of Sample 2, as displayed by FileInsight</figcaption>
+</figure>
+
+<!--![sample 2 strings]({{"/assets/img/sample-2-strings.png"}})-->
 
 The text is cut off in the screenshot, but the "Your PC is blocked..." message goes on to explain how to regain access to files, the consequences of attempting to retrieve the files oneself, and so forth. This is obviously ransomware - likely a much more serious malware sample than the first.
 
-The third sample is encrypted - I used the XOR text search plugin to find key words that might be present; interestingly, decrypting by keyword `.exe` yields a string containing `http`; this is a clue that the sample may be a dropper, or at least that it is network-connected somehow. A search for `system32` also yields a string containing the .dll file `winprox.dll`, which does not appear to be a valid Windows system file. In both cases, the XOR decryption key 0x01 found the target string, and decoding the entire binary file with this key yielded an interesting string dump:
+The third sample is encrypted - I used the XOR text search plugin to find key words that might be present; interestingly, decrypting by keyword `.exe` yields a string containing `http`; this is a clue that the sample may be a dropper, or at least that it is network-connected somehow. A search for `system32` also yields a string containing the .dll file `winprox.dll`, which does not appear to be a valid Windows system file. In both cases, the XOR decryption key 0x01 found the target string, and decrypting the entire binary file with this key yielded an interesting string dump:
 
-![sample 3 strings]({{"/assets/img/sample-3-strings.png"}})
+<figure>
+    <img src="/assets/img/sample-3-strings.png">
+    <figcaption>Decrypted string dump of Sample 3, as displayed by FileInsight</figcaption>
+</figure>
+
+<!--![sample 3 strings]({{"/assets/img/sample-3-strings.png"}})-->
 
 Note the presence of a URL (`http://....`), IP addresses, a file named `AdobeUpdate.exe`, and the suspiciously named `winprox.dll` file. It's fairly clear that this sample is at least a dropper for another malicious file, perhaps performing its own malicious activities similar to the sample analyzed in Lab 1. 
 
