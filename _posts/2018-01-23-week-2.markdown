@@ -249,12 +249,113 @@ Mr. Beek had mentioned that these files originated in the publicly-released part
 
 I returned to the mysterious .bat file located in the E:\ directory, starting FlyPaper to prevent the command prompt from closing itself. Before running it, I copied the file to the Desktop. Next, I started FlyPaper, choosing "Block Program Exit" in the program's menu before executing. I noticed a series of error messages: it appeared that the .bat file was searching for a series of filenames and directories that it wasn't finding. Unfortunately, closing the command prompt also crashed the VM, and so I was forced to revert to a previous snapshot before continuing my analysis. 
 
-1/23/18, 6:54pm UTC -0800 (9:54pm local time, UTC -0500): I returned to a previous, pre-analysis snapshot, re-mounted the Mayflower disk image, and, again, recovered the files on the disk with photorec. This returned me to a state pre-execution of the .bat file. I took another snapshot at xxxxpm (UTC -0800) to save a post-image mount state. All file and directory names were kept identical to their pre-crash counterparts. 
+1/23/18, 8:00pm UTC -0800 (11:00pm local time, UTC -0500): I returned to a previous, pre-analysis snapshot, re-mounted the Mayflower disk image, and, again, recovered the files on the disk with photorec. This returned me to a state pre-execution of the .bat file. I took another snapshot at 8:02pm (UTC -0800) to save a post-image mount state. All file and directory names were kept identical to their pre-crash counterparts. 
 
-<!--1/23/18, 7:51pm UTC -0800: -->
+1/23/18, 8:03pm UTC -0800 (11:03pm local time, UTC -0500): Continuing with my analysis: I opened the .bin file with FileInsight, performing a string dump with the Strings plugin, searching for telling commands, filenames, or directories in the file. Immediately, I noticed a series of command-line instructions and questionably-named PE files:
 
+<figure>
+    <img src="/assets/img/week2/bin-strings.png">
+    <figcaption></figcaption>
+</figure>
+
+The commands:
+- `cmd.exe /q /c net share shared$ /delete`
+- `cmd.exe /q /c net share shared=%SystemRoot%` 
+- `cmd.exe /q /c net share shared=%SystemRoot% /GRANT:everyone,FULL`
+
+Are related to file/printer shares; `net share shared$ /delete` deletes the share, and `net share shared=%SystemRoot% /GRANT: everyone, FULL` gives all users full access to this network share, which is in fact the [system root folder][sys-root]. 
+
+So, I can conclude that the malware is abusing network shares somehow. 
+
+The filenames `RasSecruity` and `RasMgrp` are very suspicious - note the misspelling in the former. Other suspicious filenames include `diskpartmgr15.exe`, `hwrcompsvc64.exe`, and `dpnsvr16.exe`. 
+
+Here, I elected to perform a dynamic malware analysis, using my VM along with Process Monitor, FlyPaper, and FakeNet to observe the running malware. The VM was totally isolated from outside networks, limiting the possibility of contributing to the infection; this also seemed a quicker, more direct way to observe and analyze the malware in action.
+
+1/23/18, 8:31pm UTC -0800: With my previous snapshot in place, I began the dynamic analysis, starting Process Monitor, FlyPaper, and FakeNet. I then moved the .bin file to the Desktop, renamed it `rootkit.exe`, and executed it.
+
+Immediately, I notice FakeNet outputting this message: 
+
+<figure>
+    <img src="/assets/img/week2/redir-socket.png">
+    <figcaption></figcaption>
+</figure>
+
+So, it appears that this malware is looking to connect to a socket at several IP addresses; this is being redirected by FakeNet. Looking through Process Monitor, I notice that `rootkit.exe` is reading from itself, possibly looking for the series of usernames and passwords stored within it. At 8:35pm system time, it creates a second executable, named `igfxtrayex.exe`. 
+
+1/23/18, 9:02pm UTO -0800: This investigative process was stopped when Windows Explorer crashed. Immediately before crashing, a series of `taskhost` executables were created on the Desktop (the directory from which the renamed `rootkit.exe` file had been launched). In an attempt to replicate this behavior, I returned to my saved snapshot, and re-started my analysis with only Process Monitor and FakeNet running; this was an attempt to mimic a `live` attack as much as possible, allowing programs to terminate as they wished.
+
+Here, I investigate Process Monitor, which displays a long series of `RegOpenKey`, `RegQueryValue`, and `RegCloseKey` operations on `HKLM\System\CurrentControlSet\Services\Tcpip`; this is indicative of repeated attempts to establish a TCP connection with another network entity, as shown by FakeNet.
+
+1/23/2018, 9:20pm UTC -0800: Finally, the `taskhost` executables are created, and Windows Explorer crashes:
+
+<figure>
+    <img src="/assets/img/week2/taskhost-killed.png">
+    <figcaption></figcaption>
+</figure>
+
+Looking through Process Monitor, I notice that `taskhostmw.exe` performs multiple `SetDispositionInformationFile` operations, setting Delete to True; using Process Monitor's Filter tool, I displayed only files deleted by `taskhostmw.exe`; the resulting list of deleted processes is gigantic: 
+
+<figure>
+    <img src="/assets/img/week2/taskhostmw-killed.png">
+    <figcaption></figcaption>
+</figure>
+
+`taskhostom.exe` is analyzed in a similar fashion, using Process Monitor's Filter: notice that here, it is deleting FileInsight plugins.
+
+<figure>
+    <img src="/assets/img/week2/taskhostom-killed.png">
+    <figcaption></figcaption>
+</figure>
+
+Generally, these processes are destroying thousands (really, hundreds of thousands) of files on the target computer; it is likely that they are attempting to propagate through a local network using known access credentials (found in the .bin file analyzed above and run as `rootkit.exe`); once this process it complete, `rootkit.exe` deploys the `taskhost` executables, which destroy the content of the host's hard drive. Navigating through the C:\ drive, I notice that many executables, shortcuts, and directories have simply disappeared, with more disappearing as the analysis continues.
+
+I was unable to obtain a memory dump, as FTK Imager had itself been deleted. 
+
+1/23/18, 9:44pm UTC-0800: I have returned to my pre-attack snapshot. My final step in analyzing the malware was to analyze the `igfxtrayex.exe` file created by the .bin file; my intent was to look for clues as to how the `taskhost` files are created, as they did not appear in a strings search or XOR text search of the .bin file itself. I did notice a string in the .bin file referencing something called inflate, written by Mark Adler; a Google search revealed that this is part of [a data compression library][inflate]. 
+
+This analysis gave me a high-level sense of the intent of the malware - it is a _wiper_, meant to propagate itself through the network, destroying files on its hosts' hard drives after it infects other connected network devices. As noted above, the credentials are likely used to gain access into the target system; the `net share` commands above are probably intended to allow the malware to be written to new hosts.  
+
+I performed a brief amount of research using the `igfxtrayex.exe` keyword; a Google search revealed [this report][US-cert-report], created in the wake of the Sony attack, that describes in detail how the malware works. It is interesting to note that this malware will eventually overwrite the Master Boot Record, rendering the host machine inoperable. 
+
+1/23/18, 10:02pm UTC-0800: I'm about to wrap up my investigation, although I still need to address Questions 5 and 6. 
+
+Regarding deleted files, I noted above how the malware itself deletes a large number of files, eventually rendering the host inoperable. This behavior could be replicated after returning to a saved snapshot and re-running the malware.
+
+There were also important deleted files on the captured disk image itself, including `f0011272.jpg`, the "Hacked by #GOP" image that revealed usernames and passwords in the malware. Investigation of other images among the deleted files reveals `f0010440.jpg`, an image of an oil refinery: 
+
+<figure>
+    <img src="/assets/img/week2/oil-refinery.png">
+    <figcaption></figcaption>
+</figure>
+
+To a certain extent, this corroborates the information contained in the .zip file discussed above. Other DPRK-centric material (such as the image of Kim Il Sung in `f0013896.png`) supported the notion that this attack originated there.
+
+Recommendations to the targets of this attack are similar to those developed by [US-Cert][US-cert-report]:
+- Change all access credentials: usernames and passwords. 
+- Move important or confidential files off of network-connected equipment.
+- Update operating systems and software, making sure that all known security patches are installed.
+- Consider hiring penetration testers to analyze any other weak points in security infrastructure. 
+- Consider improving or upgrading AV protection.  
+- Limit network connectivity of critical refinery equipment. Ensure that any computers tasked with monitoring or controlling refinery equipment are fully secured and as isolated as possible. 
+
+### Conclusions
+
+In summary, I can conclude that:
+
+1. The targets of the attack are two South Korean oil refineries, GS_Caltex's Yeosu Refinery, and S-Oil's Onsan Refinery. Specific targets at GS-Caltex have been identified as Kant P. Rajani, IT support manager, and Akhil Kumar Rajesh Nagar, CEO. 
+2. The malware attack works by using valid usernames and passwords to gain access to computers on the company's network, replicating itself onto other network-connected devices before wiping the contents of the host's hard drive, rendering it inoperable. 
+3. A list of usernames and passwords could be found in the .bin file located within the main partition of the captured disk image; these can be viewed above.
+4. Usernames and passwords were found at memory offset `0x0003EBBD` in the .bin file.
+5. Deleted files could be restored using photorec, and contained useful supporting data, along with key clues used for decrypting the malware used in the attack. The malware itself deletes numerous system and user files, eventually re-writing the Master Boot Record, making the host computer inoperable. This behavior could be replicated by using memory snapshots to return to a pre-infection state.
+6. Recommendations for the users include improving AV protection, changing all access credentials, moving important or confidential files off of network-connected equipment, updating operating systems and applications with recent security patches, and hiring teams of penetration testers to identify any vulnerabilities.
+
+
+That's all for this week. Mr. Beek has ridden off into the sunset, and we begin next week with a study of malware defense techniques. Should be interesting. I've learned an incredible amount in the last two weeks, and am looking forward to the next eight.
 
 [rfc-3327]: https://www.ietf.org/rfc/rfc3227.txt
 [vol-docs]: https://github.com/volatilityfoundation/volatility/wiki/Command-Reference#getsids
 [vol-blog]: https://volatility-labs.blogspot.com/2012/09/movp-13-desktops-heaps-and-ransomware.html
 [mft]: https://msdn.microsoft.com/en-us/library/windows/desktop/aa365230(v=vs.85).aspx
+[sys-root]: https://en.wikipedia.org/wiki/Environment_variable
+[US-cert-report]: https://www.us-cert.gov/ncas/alerts/TA14-353A
+[inflate]: https://github.com/madler/zlib
