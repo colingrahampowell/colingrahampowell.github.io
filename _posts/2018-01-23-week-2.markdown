@@ -280,7 +280,9 @@ Immediately, I notice FakeNet outputting this message:
     <figcaption>FakeNet output: attempted socket connections</figcaption>
 </figure>
 
-So, it appears that this malware is looking to connect to a socket at several IP addresses; this is being redirected by FakeNet. Looking through Process Monitor, I notice that `rootkit.exe` is reading from itself, possibly looking for the series of usernames and passwords stored within it. At 8:35pm system time, it creates a second executable, named `igfxtrayex.exe`. 
+So, it appears that this malware is looking to connect to a socket at several IP addresses; this is being redirected by FakeNet, but the intenet is clear. Looking through Process Monitor, I notice that `rootkit.exe` is reading from itself, possibly looking for the series of usernames and passwords stored within it. 
+
+At 8:35pm system time, it creates a second executable, named `igfxtrayex.exe`. 
 
 1/23/18, 9:02pm UTO -0800: This investigative process was stopped when Windows Explorer crashed. Immediately before crashing, a series of `taskhost` executables were created on the Desktop (the directory from which the renamed `rootkit.exe` file had been launched). In an attempt to replicate this behavior, I returned to my saved snapshot, and re-started my analysis with only Process Monitor and FakeNet running; this was an attempt to mimic a `live` attack as much as possible, allowing programs to terminate as they wished.
 
@@ -311,7 +313,7 @@ Generally, these processes are destroying thousands (really, hundreds of thousan
 
 I was unable to obtain a memory dump, as FTK Imager had itself been deleted. 
 
-1/23/18, 9:44pm UTC-0800: I have returned to my pre-attack snapshot. My final step in analyzing the malware was to analyze the `igfxtrayex.exe` file created by the .bin file; my intent was to look for clues as to how the `taskhost` files are created, as they did not appear in a strings search or XOR text search of the .bin file itself. I did notice a string in the .bin file referencing something called inflate, written by Mark Adler; a Google search revealed that this is part of [a data compression library][inflate]. 
+1/23/18, 9:44pm UTC-0800: I have returned to my pre-attack snapshot. My final step in analyzing the malware was to analyze the .bin file from which my renamed `rootkit.exe` file was derived; my intent was to look for clues as to how the `taskhost` files are created, as they did not appear in a strings search or XOR text search of the .bin file itself. I did notice a string in the .bin file referencing something called inflate, written by Mark Adler; a Google search revealed that this is part of [a data compression library][inflate]. This may explain why the strings were not readily apparent.
 
 This analysis gave me a high-level sense of the intent of the malware - it is a _wiper_, meant to propagate itself through the network, destroying files on its hosts' hard drives after it infects other connected network devices. As noted above, the credentials are likely used to gain access into the target system; the `net share` commands above are probably intended to allow the malware to be written to new hosts.  
 
