@@ -317,7 +317,7 @@ I was unable to obtain a memory dump, as FTK Imager had itself been deleted.
 
 This analysis gave me a high-level sense of the intent of the malware - it is a _wiper_, meant to propagate itself through the network, destroying files on its hosts' hard drives after it infects other connected network devices. As noted above, the credentials are likely used to gain access into the target system; the `net share` commands above are probably intended to allow the malware to be written to new hosts.  
 
-I performed a brief amount of research using the `igfxtrayex.exe` keyword; a Google search revealed [this report][US-cert-report], created in the wake of the Sony attack, that describes in detail how the malware works. It is interesting to note that this malware will eventually overwrite the Master Boot Record, rendering the host machine inoperable. 
+I performed a brief amount of research using the `igfxtrayex.exe` keyword; a Google search revealed [this report][US-cert-report]by US-CERT, created in the wake of the Sony attack, that describes in detail how the malware works. It is interesting to note that this malware will eventually overwrite the Master Boot Record, rendering the host machine inoperable. 
 
 1/23/18, 10:02pm UTC-0800: I'm about to wrap up my investigation, although I still need to address Questions 5 and 6. 
 
