@@ -5,26 +5,25 @@ date:   2018-01-23 17:00:00 -0500
 categories: dada 
 ---
 
-Last week’s lectures focused primarily on malware analysis. This week, Mr. Beek broadened the scope of his discussion to _forensic computing_, the process of “identifying, preserving, analyzing, and presenting digital evidence in a legally acceptable way.” Mr. Beek has significant experience as a forensic analyst, and he wove a number of interesting personal anecdotes into this week's course material. This week ended with a mock forensic analysis, tying concepts from the first two weeks together into a single assignment.
+Last week’s lectures focused primarily on malware analysis. This week, Mr. Beek broadened the scope of his discussion to _forensic computing_, the process of “identifying, preserving, analyzing, and presenting digital evidence in a legally acceptable way.” Mr. Beek has significant experience as a forensic analyst, and he wove a number of interesting personal anecdotes into this week's course material. These were Mr. Beek's last lectures with us, and he ended his tenure with a mock forensic analysis, tying concepts from the first two weeks together into a single assignment.
 
 ## Concepts 
 
-Forensic analysts and incident response teams are typically called in to help with a few major case types: fraud, IP theft, hacker intrusions or data breaches, inappropriate usage of content (such as accessing inappropriate websites at work), and child exploitation. Additionally, analysts are often hired to perform “eDiscovery” in support of civil or criminal litigation. 
+Forensic computing is a broad field, although forensic analysts and incident response teams are typically called in to assist with a few major case types: fraud, IP theft, hacker intrusions or data breaches, inappropriate usage of content (such as accessing inappropriate websites at work), and child exploitation. At times, analysts are hired to perform “eDiscovery” in support of civil or criminal litigation. Generally, however, all forensic analysis can be separated into three primary categories: 
 
-Forensic analysis can be broadly separated into three categories: 
 -	live forensics, or the process of evidence collection on a live, functional system,
 -	post-mortem forensics, in which computer memory or disk contents are analyzed for evidence after a suspect system has been captured and deactivated, and
 -	Network-based forensics, or analysis of the network behavior originating from or destined for a target system or device.
 
-Mr. Beek noted that live forensics is becoming more popular as investigators and police forces become more computer-savvy; the process of shutting down a computer can be extremely costly in terms of evidence collection. However, crime scenes can be dangerous, and the decision to shut down any live analysis and remove evidence from the crime scene is entirely up to the chief forensic analyst. 
+Mr. Beek noted that live forensics is becoming more popular as investigators and police forces become more computer-savvy; the process of shutting down a computer can be extremely costly in terms of evidence collection. Nonetheless, crime scenes are often dangerous, and the decision to shut down any live analysis and remove evidence from the crime scene is entirely up to the chief forensic analyst. 
 
-He also mentioned that forensic analysis must develop the ability to of explain their findings to a layperson, such as a judge or lawyer. As an analyst’s analysis is often presented as legal evidence, it needs to be air-tight, as impervious as possible to attack or questioning from a defense attorney or judge. Most computer forensics experts are not trained in legal matters, and so there is often a learning curve for new analysts as they prepare legal documentation.
+He also mentioned that forensic analysts _must_ develop the ability to explain their findings to a layperson, such as a judge or lawyer. As an analyst’s work is often presented as legal evidence, it needs to be air-tight, as impervious as possible to attack or questioning from a defense attorney or judge. Most computer forensics experts are not trained in legal matters, and so there is often a learning curve for new analysts as they prepare legal documentation and legally-sound lines of reasoning.
 
-Forensic analysts and investigators must be keenly aware of best practices in data collection and evidence handling: an investigator should strive, at all times, to record everything: the time in which they start analysis (local time and system time), what they observe, which steps they took (and when), and so forth. Analysts typically maintain a forensic journal, following legal standards for documentation (pen and paper, no skipped lines). Analysts should, at all times, strive to minimize data loss. 
+Forensic analysts and investigators must be keenly aware of best practices in data collection and evidence handling. An investigator should strive, at all times, to record everything: the time at which they start analysis (local time and system time), what they observe, which steps they took (and when), and so forth. Investigators and analysts typically maintain a forensic journal, following legal standards for documentation (pen and paper, no skipped lines). In conducting their, work, forensic analysts must limit data loss to an extreme extent - any data lost can compromise evidence or call into question the veracity of an analyst's report. 
 
 The lecture included a brief discussion about the sheer variety of devices that a forensic analyst might encounter – computer forensics are not limited to laptops or desktops. Smartphones, USB sticks, car GPS systems, and even smart TVs are sources of forensic data. Analysts often need to devise clever ways to access this data without disrupting it – preserving memory is paramount.
 
-Mr. Beek introduced the term triage, which in forensic analysis refers to the process of proving a conclusion in multiple ways, using different analytical tactics. In a database attack, for instance, one might be able to verify the success of the attack by analyzing registry modification, system log files, and SQL logs. Arriving at the same conclusion in multiple ways increases the soundness of an investigator’s analysis. 
+Mr. Beek introduced the term _triage_, which in forensic analysis refers to the process of proving a conclusion in multiple ways, using different analytical tactics. In a database attack, for instance, one might be able to verify the success of the attack by analyzing registry modification, system log files, and SQL logs. Arriving at the same conclusion in multiple ways increases the soundness of an investigator’s analysis. 
 
 Preservation of evidence integrity is a tenet common to any forensic investigation; in computer forensics, this can be especially tricky. When performing postmortem analysis of captured disks or partitions, investigators typically perform the following steps, in order, to guarantee that any evidence collected will be admissible (that is, deemed legitimate in the opinion of a court of law):
 
@@ -37,19 +36,19 @@ In a postmortem analysis, it is of utmost importance to hash the original disk b
 
 Mr. Beek continued with a discussion of the incident response process, presenting a flow-chart describing the steps that an incident response team might take in investigating, analyzing, and remediating a malware attack or other cybercrime. An important – and, perhaps, overlooked – step is evaluation; taking time to evaluate a particular incident response effort allows teams to better prepare for future threats. Incident response teams have to stay sharp: they are often called in when time is of the essence, and so practice (in the form of “Red Team / Blue Team” training scenarios) and adequate tool preparation are absolutely necessary. Incident responders must also learn to communicate effectively; often, nervous executives are hovering over the response team, looking for answers or updates – a skilled incident responder knows how to convey progress in a clear, non-technical manner. Dedicated incident response teams are a luxury, however, and it is more often the case that ad-hoc, cobbled-together teams of subject matter experts are brought together to neutralize a live threat. 
 
-In investigating an APT attack, forensic investigators can look to the APT-Kill-Chain, using it as a point of reference to determine what sort of evidence might be present. Attacker reconnaissance might be captured in external or internal firewall logs or IPS logs; attacker actions during the Installation, Command and Control, and Delivery phases could be captured by reviewing memory dumps, registry modifications, or prefetch-files (similar to our static analysis last week). The sheer amount of potential data presents an issue – it is time-consuming to sort through, and the variety of operating systems, or equipment vendor may require a plethora of specialized analysis tools. However, one of the most complex challenges is in normalizing a timeline of the attack; as the number of devices involved in an attack increases, the challenge of normalizing their system times to produce a unified sequence of events becomes significant. Again, forensic investigators must take great care to ensure that their analysis will stand up to legal scrutiny, and that they are following established investigation guidelines at all times.
+In investigating an APT attack, forensic investigators can look to the APT-Kill-Chain, using it as a point of reference to determine what sort of evidence might be present. Attacker reconnaissance might be captured in external or internal firewall logs or IPS logs; attacker actions during the Installation, Command and Control, and Delivery phases could be captured by reviewing memory dumps, registry modifications, or prefetch-files (similar to our static analysis last week). The sheer amount of potential data presents an issue – it is time-consuming to sort through, and the variety of operating systems and equipment vendors in most corporate computer systems may require a plethora of specialized analysis tools. However, one of the most complex challenges is in normalizing a timeline of the attack; as the number of devices involved in an attack increases, the challenge of normalizing their system times to produce a unified sequence of events becomes significant. Again, forensic investigators must take great care to ensure that their analysis will stand up to legal scrutiny, and that they are following established investigation guidelines at all times.
 
-To illustrate the necessity of minimizing evidence contamination, Mr. Beek discussed Locard’s Exchange Principle: when two objects contact each other, evidence is left. One cannot interact with a live system without affecting it in some manner, and so it is imperative to keep detailed, organized notes documenting one’s analytical process.
+To illustrate the necessity of minimizing evidence contamination, Mr. Beek discussed _Locard’s Exchange Principle_: when two objects contact each other, evidence is left. One cannot interact with a live system without affecting it in some manner, and so it is imperative to keep detailed, organized notes documenting one’s analytical process.
 
-[RFC 3327][rfc-3327], “Guidelines for Evidence Collection and Archiving”, provides an overview of Guiding Principles, or general best practices in evidence collection. These include keeping detailed notes, tracking the difference between the system clock and UTC, prioritizing collection over analysis, and minimizing the changes to data as it is being collected. Notably, it also defines an Order of Volatility for information, which mirrors the order in which forensic evidence should be taken. Extremely volatile elements such as CPU register or cache contents should be collected first, followed by routing tables, ARP caches, process tables, and memory; collection should continue with temporary file systems, disks, remote logging and monitoring data, physical configurations and network topology, and, finally, by archival media or backup disks. Intuitively, it is most important to collect the most volatile data first, as any modification to the system (including a shutdown) is likely to destroy it. 
+[RFC 3227][rfc-3227], “Guidelines for Evidence Collection and Archiving”, provides an overview of Guiding Principles, or general best practices in evidence collection. These include keeping detailed notes, tracking the difference between the system clock and UTC, prioritizing collection over analysis, and minimizing the changes to data as it is being collected. Notably, it also defines an Order of Volatility for information, which mirrors the order in which forensic evidence should be taken. Extremely volatile elements such as CPU register or cache contents should be collected first, followed by routing tables, ARP caches, process tables, and memory; collection should continue with temporary file systems, disks, remote logging and monitoring data, physical configurations and network topology, and, finally, by archival media or backup disks. Intuitively, it is most important to collect the most volatile data first, as any modification to the system (including a shutdown) is likely to destroy it. 
 
 Mr. Beek’s lectures continued with a discussion of the tools used by computer forensics analysts, in particular FTK Imager and Volatility. FTK Imager is a utility used for disk imaging; it automatically calculates md5 hash values, validates pre- and post-copy checksums, and provides a directory listing in the copied disk image. It’s a more user-friendly, GUI-based tool, although as a result it leaves a greater footprint in memory; this can destroy useful evidence. In practice, professionals often use lower-impact tools to accomplish this task. It’s also important to remember to never install FTK Imager (or any other piece of software) on the target’s computer – this can invalidate any evidence collected, as the integrity of the data collected can easily be called into question. If data is to be collected while the target system is running, an imaging program like FTK Imager could instead be executed via a USB stick or flash drive attached to the target’s computer. 
 
 Once a disk image is obtained, forensic researchers and analysts often analyze and glean information from the image using tools like Volatility. Volatility is massive in scope, containing dozens of plugins that extend its basic disk image analysis functionality. It is run from the command-line, and a typical workflow involves redirecting its output to a text file for detailed analysis. Mr. Beek demonstrated its basic functionality, running imageinfo to obtain system info pertinent to the image under analysis – its operating system, number of CPU cores, and so forth. This output can, in turn, be used in certain plugins that require this information. He continued with psscan, dlllist, netscan, deskscan, getsids, mftparser, and timeliner, which will be discussed more fully in “What I Learned”, below.
 
-Knowing how to use all of these plugins won’t accomplish much if one doesn’t know what to look for, and so Mr. Beek continued with a brief discussion of the key artifacts that are analyzed in many forensic investigations. In particular, he discussed what can be obtained from a memory snapshot, including keystrokes, wireless keys, window contents, running device drivers, usernames and passwords, all of value to the forensic investigator. He then introduced the Windows registry, a hierarchical database of key-value pairs that records most of what Windows does; this includes configuration settings, hardware device information, application data, insertion times for USBs, and so forth. RegEdit is a Windows tool that can be used to search through the registry and observe changes. Important clues can be found in the Run keys, which are used to determine which programs start when the operating system boots; most malware modifies these keys in an attempt to self-perpetuate on the target’s system. Other important data, such as lists of last-used files, typed URLs, MAC addresses of connected devices, and search histories can be found in the registry. Outside of the registry, other key artifacts include system restore points, hibernation files, .LNK files, pagefile.sys, and crash-dump files. An investigator must often combine data from multiple sources to triage and harden their conclusions, and so it is often to look through many different files for the same traces of activity.
+Knowing how to use all of these plugins won’t accomplish much if one doesn’t know what to look for, and so Mr. Beek continued with a brief discussion of the key artifacts that are analyzed in many forensic investigations. In particular, he discussed what can be obtained from a memory snapshot, including keystrokes, wireless keys, window contents, running device drivers, usernames, and passwords, all of value to the forensic investigator. He then introduced the Windows registry, a hierarchical database of key-value pairs that records most of what Windows does; this includes configuration settings, hardware device information, application data, insertion times for USBs, and so forth. RegEdit is a Windows tool that can be used to search through the registry and observe changes. Important clues can be found in the Run keys, which are used to determine which programs start when the operating system boots; most malware modifies these keys in an attempt to self-perpetuate on the target’s system. Other important data, such as lists of last-used files, typed URLs, MAC addresses of connected devices, and search histories can be found in the registry. Outside of the registry, other key artifacts include system restore points, hibernation files, .LNK files, pagefile.sys, and crash-dump files. An investigator must often combine data from multiple sources to triage and harden their conclusions, and so it is often to look through many different files for the same traces of activity.
 
-Mr. Beek’s lectures concluded with a brief discussion of data recovery and data carving. Once a file is deleted, it is not immediately overwritten; the start and end “flags” used to identify it as a file, however, are removed, allowing it to be overwritten as needed by the operating system. Many file types are identifiable by the sequence of characters that begin their headers – PE files always start with “MZ”, and JPEG files always start with “JOJA”. Data carving software looks through a target disk for these character sequences in deleted-but-intact files. Once found, these previously-deleted files are “carved out” and reconstituted, allowing for further analysis. An incredible amount of information can be found by carving out deleted files – Mr. Beek mentioned that smartphones typically retain deleted material for a significant amount of time, and that long-deleted text messages, app data, and so forth can be found fairly easily, even after the SD card is removed. This segment concluded with a demonstration of the photorec software, which will be discussed in more detail below.
+Mr. Beek’s lectures concluded with a brief discussion of data recovery and data carving. Once a file is deleted, it is not immediately overwritten; the start and end “flags” used to identify it as a file, however, are removed, allowing it to be overwritten as needed by the operating system. Many file types are identifiable by the sequence of characters that begin their headers – PE files always start with “MZ”, and JPEG files always start with `0xFFD8`. Data carving software looks through a target disk for these character sequences in deleted-but-intact files. Once found, these previously-deleted files are “carved out” and reconstituted, allowing for further analysis. An incredible amount of information can be found by carving out deleted files – Mr. Beek mentioned that smartphones typically retain deleted material for a significant amount of time, and that long-deleted text messages, app data, and so forth can be found fairly easily, even after the SD card is removed. This segment concluded with a demonstration of the photorec software, which will be discussed in more detail below.
 
 This week’s activities were capped with a fun forensic analysis challenge, which I attempted in an effort to internalize the lecture material. 
 
@@ -59,20 +58,20 @@ This week’s content was particularly interesting to me, as it seems to exist a
 
 To a certain extent, I’m playing catch-up with a lot of the more detailed Operating Systems material presented in Mr. Beek’s lectures; intuitively, I know what a disk image is, how an OS mounts a disk, how the Windows registry works, and what sort of information might be contained in a master boot record, but I would not be able to explain any of these topics in a detailed or nuanced manner. As I would later perform forensic analysis on a disk image provided by the instructor, I decided to begin by reviewing some of these topics to ensure that I knew what to look for, and how find it. 
 
-Reading through RFC 3227 was interesting; its discussion of evidence collection practices closely matched Mr. Beek’s lecture material, and the overview of legal considerations was a handy summary of the requirements for a piece of evidence to be considered valid. Through coursework and my day job, I’m used to performing detailed analysis, but I’ve never considered what sort of steps I might need to take to perform a forensic analysis – the level of intensity and rigor required to create a legally defensible document is a step beyond what I’m used to. 
+Reading through RFC 3227 was interesting; its discussion of evidence collection practices closely matched Mr. Beek’s lecture material, and the overview of legal considerations was a handy summary of the requirements for a piece of evidence to be considered valid. Through coursework and my day job, I’m used to performing detailed analyses, but I’ve never considered what sort of steps I might need to take to perform a forensic analysis – the level of intensity and rigor required to create a legally defensible document is a step beyond what I’m used to. 
 
 I followed along with Mr. Beek’s FTK Imager and Volatility labs in an effort to become more familiar with their use. I found Volatility to be especially fun to use, given its versatility – the amount of information that can be gleaned through different Volatility plugins is incredible. I’m a sucker for programs run from the command line, too.
 
-I started with the FTK Imager tutorial, following along with Mr. Beek’s walkthrough and creating a memory dump of our virtual machine using the software. Here, we dumped memory to our local machine just to allow ourselves some practice, but in a real forensics case, this would be a disastrous step, as doing so significantly modifies the state of the computer from which the dump is being taken. A safer step might be to instead store the memory dump in a network share. I followed along as Mr. Beek discussed proper naming techniques, as most forensic or malware investigations are identified by a codename, target computer serial number, and so forth. I continued by practicing with the “Add Evidence Item” feature, mounting a physical disk ( the VM’s hard drive, in this case ) in a read-only fashion that allowed me to inspect its contents without modifying them. This mimics the process than an investigator might use to inspect a remote drive, once a write blocker was in place. Following along with Mr. Beek, I found the Master File Table (MFT), which FTK Imager allows the user to export individually. The [MFT][mft] stores data about every file on the file system volume, which can be an invaluable tool in a forensic investigation.
+I started with the FTK Imager tutorial, following along with Mr. Beek’s walkthrough and creating a memory dump of our virtual machine using the software. Here, we dumped memory to our local machine just to allow ourselves some practice, but in a real forensics case, this would be a disastrous step, as doing so significantly modifies the state of the computer from which the dump is being taken. A safer step might be to instead store the memory dump in a network share. I followed along as Mr. Beek discussed proper naming techniques, as most forensic or malware investigations are identified by a codename, target computer serial number, and so forth. I continued by practicing with the “Add Evidence Item” feature, mounting a physical disk (the VM’s hard drive, in this case) in a read-only fashion that allowed me to inspect its contents without modifying them. This mimics the process than an investigator might use to inspect a remote drive, once a write blocker is in place. Following along with Mr. Beek, I found the Master File Table (MFT), which FTK Imager allows the user to export individually. The [MFT][mft] stores data about every file on the file system volume - an invaluable tool in a forensic investigation.
 
 <figure>
     <img src="/assets/img/week2/ftk-imager.png">
     <figcaption>Finding MFT using FTK Imager</figcaption>
 </figure>
 
-Finally, Mr. Beek demonstrated the process of creating a disk image with FTK Imager, noting that the same naming conventions applied here as with the memory dump - note a project codename, serial number of the computer being investigated, and so on. 
+Finally, Mr. Beek demonstrated the process of creating a disk image with FTK Imager, mentioning that the same naming conventions applied here as with the memory dump - note a project codename, serial number of the computer being investigated, and so on. 
 
-I next followed along with the Volatility lab, taking the example memory dump provided for us, and performing basic analysis on its content. I began by renaming the volatility executable to volatility.exe, and entering the command volatility.exe --f <mem-dump> imageinfo from the DOS prompt, which generated basic information about the memory dump: here, I noticed a that the image profile matches Windows 7 SP0 or SP1, with 1 processor. Importantly, I noticed the image date and time of January 6th, 2015; this would be very important to note in a real forensic analysis. 
+I next followed along with the Volatility lab, taking the example memory dump provided for us and performing basic analysis on its content. I began by renaming the volatility executable to `volatility.exe` and entering the command `volatility.exe --f <mem-dump> imageinfo` from the DOS prompt. This generated basic information about the memory dump: here, I noticed that the image profile matches Windows 7 SP0 or SP1. Importantly, I also noticed the image date and time of January 6th, 2015; this would be very important to mark in a real forensic analysis. 
 
 <figure>
     <img src="/assets/img/week2/volatility-getimageinfo.png">
@@ -80,16 +79,16 @@ I next followed along with the Volatility lab, taking the example memory dump pr
 </figure>
 
 For now, I continued with the lab, using psscan to obtain a list of hidden or terminated processes in the image. This was accomplished by entering the command 
-volatility.exe –f <mem-dump> --profile=Win7SP0x86 psscan. A few familiar processes appeared:
+`volatility.exe –f <mem-dump> --profile=Win7SP0x86 psscan` in the command prompt. A few familiar processes appeared:
 	
 <figure>
     <img src="/assets/img/week2/volatility-psscan.png">
     <figcaption>Output of Volatility's psscan plugin</figcaption>
 </figure>
 
-Notice the evil.exe and svchest.exe processes running in the image; these are the familiar malware programs from Lab 1. The number in the following column marks the process’s own process ID, and the number in the column after that indicates the parent process’s PID. A detailed analysis could involve creating a sort of tree from this information, identifying the pattern of parent and child processes created. 
+Notice the `evil.exe` and `svchest.exe` processes running in the image; these are the familiar malware programs from Lab 1. The number in the following column marks the process’s own process ID, and the number in the column after that indicates the parent process’s PID. A detailed analysis could involve creating a sort of tree from this information, identifying the pattern of parent and child processes created. 
 
-I continued this exercise by investigating the dlllist, netscan, deskscan, and getsids plugins, redirecting output to an appropriately-named text file. dlllist displays the loaded DLLs for a given process, and is run with the command volatility.exe –f <mem-dump> --profile=WinSP0x86 –dlllist –p <pid>, where pid is the ID of the target process.
+I continued this exercise by investigating the dlllist, netscan, deskscan, and getsids plugins, redirecting output to an appropriately-named text file. dlllist displays the loaded DLLs for a given process, and is run with the command `volatility.exe –f <mem-dump> --profile=WinSP0x86 –dlllist –p <pid>`, where pid is the ID of the target process.
 
 netscan provides a list of network activity; after running Volatility with this plugin, I was able to see all of the network activity to and from the target computer, including the activity generated by evil.exe:
 
@@ -98,9 +97,9 @@ netscan provides a list of network activity; after running Volatility with this 
     <figcaption>Output of Volatility's netscan plugin</figcaption>
 </figure>
 
-I continued following along with Mr. Beek, capturing desktops data with deskscan;  this command “enumerates desktops, desktop heap allocations, and associated threads” (the [Volatility Labs Blog][vol-blog]). As the Volatility Labs blog notes, malware will often launch itself or other applications in a different desktop, preventing the user from seeing the program being launched. Many ransomware attacks work by locking the user out of the own desktop.I obtained a list of security identifiers (or, SIDs) for evil.exe with getsids. As stated in [the Volatility documentation][vol-docs], Getsids can be used to identify processes that have doctored with privileges, as well as which processes belong to specific users. 
+I continued following along with Mr. Beek, capturing desktops data with deskscan;  this command “enumerates desktops, desktop heap allocations, and associated threads” (the [Volatility Labs Blog][vol-blog]). As the Volatility Labs blog notes, malware will often launch itself or other applications in a different desktop, preventing the user from seeing the program being launched. Many ransomware attacks work by locking the user out of the own desktop.I obtained a list of security identifiers (or, SIDs) for `evil.exe` with getsids. As stated in [the Volatility documentation][vol-docs], Getsids can be used to identify processes that have doctored with privileges, as well as which processes belong to specific users. 
 
-I continued by toying with the Volatility plugins mftparser and timeliner. timeliner (volatility.exe –f <mem-dump> --profile=Win7SP0x86 mftparser --output=body) is very useful for establishing a timeline of events in a forensic analysis. The timeliner plugin is more expansive, providing an extremely detailed timeline of running processes on the target memory dump. 
+I continued by toying with the Volatility plugins mftparser and timeliner. timeliner (`volatility.exe –f <mem-dump> --profile=Win7SP0x86 mftparser --output=body`) is very useful for establishing a timeline of events in a forensic analysis. The timeliner plugin is more expansive, providing an extremely detailed timeline of running processes on the target memory dump. 
 
 I executed this command on the sample memory dump provided to us, redirecting the command’s output to a text file for easy analysis. The output is somewhat like that produced by Windows Sysinterals’s Process Monitor; there is a series of columns with identifying data for each process, network connection, thread, PE timestamp, and so forth:
 
@@ -109,7 +108,7 @@ I executed this command on the sample memory dump provided to us, redirecting th
     <figcaption>Output of Volatility's timeliner plugin</figcaption>
 </figure>
 
-As one might suspect, mftparser (volatility.exe –f <mem-dump> --profile=Win7SP0x86 mftparser --output=body) carves out the Master File Table from the image, and parses it in an effort to produce a detailed list of files in the MFT. Results can be redirected to a text file, and imported into Excel or similar for analysis. I called mftparser on the example memory dump provided to us, and observed the results:
+As one might suspect, mftparser (`volatility.exe –f <mem-dump> --profile=Win7SP0x86 mftparser --output=body`) carves out the Master File Table from the image, and parses it in an effort to produce a detailed list of files in the MFT. Results can be redirected to a text file, and imported into Excel or similar for analysis. I called mftparser on the example memory dump provided to us, and observed the results:
 
 <figure>
     <img src="/assets/img/week2/mftparser.png">
@@ -118,16 +117,16 @@ As one might suspect, mftparser (volatility.exe –f <mem-dump> --profile=Win7SP
 
 This document will contain a detailed history of what happened on the system – registry modifications, file names, changes to files, and so forth. 
 
-My final task before the challenge was to investigate data recovery and data carving with photorec. Following along with Mr. Beek, I used the photorec software, along with OSFMount, to carve deleted data from a mounted sample disk image (11-carve-fat.dd, provided with the course material). 
+My final task before the challenge was to investigate data recovery and data carving with photorec. Following along with Mr. Beek, I used the photorec software, along with OSFMount, to carve deleted data from a mounted sample disk image (`11-carve-fat.dd`, provided with the course material). 
 
-First, OSFMount was used to mount the disk image to a drive; following along, 11-carve-fat.dd was mounted to E:\. Next, I started photorec, and was greeted with the following welcome screen:
+First, OSFMount was used to mount the disk image to a drive; following along, `11-carve-fat.dd` was mounted to `E:\`. Next, I started photorec, and was greeted with the following welcome screen:
 
 <figure>
     <img src="/assets/img/week2/photorec-menu.png">
     <figcaption>Photorec opening screen</figcaption>
 </figure>
 
-Using the program’s menu interface, I chose to recover files from E:\, selected, entered “unknown” for partition, “Other” for file system type, and chose to recover all known file types. After selecting the location to store the carved files, I observed this success message:
+Using the program’s menu interface, I chose to recover files from `E:\`, selected, entered “unknown” for partition, “Other” for file system type, and chose to recover all known file types. After selecting the location to store the carved files, I observed this success message:
 
 <figure>
     <img src="/assets/img/week2/photorec.png">
@@ -135,14 +134,14 @@ Using the program’s menu interface, I chose to recover files from E:\, selecte
 </figure>
 
 
-The output of photorec – discovered files – were saved in C:\carving; here, I noticed that a number of deleted files had been recovered, including .doc, .html, .jpeg, and .wav files. 
+The output of photorec – discovered files – were saved in `C:\carving`; here, I noticed that a number of deleted files had been recovered, including .doc, .html, .jpeg, and .wav files. 
 
 <figure>
     <img src="/assets/img/week2/photorec-dir.png">
     <figcaption>Directory of discovered files</figcaption>
 </figure>
 
-After looking through the content of this folder (sadly, Word isn’t on our VM, meaning I couldn’t open “f0000281_Nick_is_a_pretty_man…..doc”), I proceeded to this week’s Final Challenge.
+After looking through the content of this folder (sadly, Word isn’t on our VM, meaning I couldn’t open `f0000281_Nick_is_a_pretty_man…..doc`), I proceeded to this week’s Final Challenge.
 
 
 ## The Final Challenge
@@ -160,18 +159,18 @@ After giving us a few hints regarding where to look, we were set loose in an eff
 
 ### Investigation
 
-1/23/18, 7:03pm EST local time (UTC-0500). The Virtual Machine was activated, and the system time in the VM was 1/23/2018, 4:12pm, UTC-0800. From here onward, all time marks will reference the time in the VM. 
+1/23/18, 7:03pm EST local time (UTC-0500). The Virtual Machine was activated, and the system time in the VM was 1/23/2018, 4:12pm, UTC-0800. From here onward, all time marks will reference the time in the VM, unless the relative difference between local and system time changes. 
 
-I downloaded the USB image, `Image_USB_Mayflower.001`, from the network share, copying it to C:\mayflower. I then used OSFMount to mount the image as the E:\ drive. In mounting the image, O selected "mount as removable media" to ensure that I could read the content of the USB drive from which the image was created. For now, I chose to mount the entire image, not just the FAT32 partition.
+I downloaded the USB image, `Image_USB_Mayflower.001`, from the network share, copying it to `C:\mayflower`. I then used OSFMount to mount the image as the `E:\` drive. In mounting the image, I selected the "mount as removable media" option to ensure that I could read the content of the USB drive from which the image was created. For now, I chose to mount the entire image, not just the FAT32 partition, to ensure that a search for deleted files would reveal as much as possible.
 
-1/23/18, 4:14pm UTC-0800: I decided to start my investigation by attempting to address the first question. Using a tip from Mr. Beek, I used photorec to create a dump of deleted files, searching through the entire image. I saved the dumped files to C:\mayflower\recup_dir.1. The directory contained a number of .png, .jpg, and .exe files:
+1/23/18, 4:14pm UTC-0800: I decided to start my investigation by attempting to address Question 1. Using a tip from Mr. Beek, I used photorec to create a dump of deleted files, searching through the entire image. Dumped files were saved to `C:\mayflower\recup_dir.1`. This directory contained a number of .png, .jpg, and .exe files:
 
 <figure>
     <img src="/assets/img/week2/deleted-files.png">
     <figcaption>"Directory of deleted files</figcaption>
 </figure>
 
-I navigated to `f0011336.png`, the file that Mr. Beek noted as containing a hint. Upon opening the file, the following image appeared:
+I opened `f0011336.png`, the file that Mr. Beek noted as containing a hint. Upon opening the file, the following image appeared:
 
 <figure>
     <img src="/assets/img/week2/hacked-by-gop.png">
@@ -179,9 +178,9 @@ I navigated to `f0011336.png`, the file that Mr. Beek noted as containing a hint
 </figure>
 
 
-The URLs contained in the image were said to be key for accessing the list of usernames and passwords noted in question 3. 
+The URLs contained in the image were said to be key for accessing the list of usernames and passwords mentioned in Question 3. 
 
-I next dismounted and re-mounted the disk image, choosing this time to mount Partition 0. The "Mount as removable media" option was again selected, and the drive was again mapped to E:\\. I navigated to the E:\ drive, and investigated its contents:
+I next dismounted and re-mounted the disk image, choosing this time to mount Partition 0. The "Mount as removable media" option was again selected, and the drive was again mapped to `E:\`. I navigated to the `E:\` drive, and investigated its contents:
 
 <figure>
     <img src="/assets/img/week2/drive-content.png">
@@ -202,7 +201,7 @@ Using this information, I opened FileInsight to investigate `don't tell mrs Il U
     <figcaption>Password hidden in hex dump of .png file</figcaption>
 </figure>
 
-1/23/18, 4:54pm UTC-0800: I next navigated to E:\ drive, using 7-zip to extract the .zip file contained in the same folder as `don't tell mrs Il Ung.jpg`. On extracting, the password was entered as `infected123!`. To avoid contaminating the drive on which I was performing my analysis, I saved the extracted .csv file to `C:\mayflower\mayflower_zip_recovered`. 
+1/23/18, 4:54pm UTC-0800: I next navigated to `E:\` drive, using 7-zip to extract the .zip file contained in the same folder as `don't tell mrs Il Ung.jpg`. Prior to extraction, the password was successfully entered as `infected123!`. To avoid contaminating the drive on which I was performing my analysis, I saved the extracted .csv file to `C:\mayflower\mayflower_zip_recovered`. 
 
 1/23/18, 5:04pm UTC-0800: Opening this .csv file with the CSV Viewer software revealed a document containing a series of comma-separated columns with fields City, Cybertarget, Website, IT support manager, CEO: 
 
@@ -220,9 +219,9 @@ GS Caltex's IT support manager and CEO are also listed in this file, suggesting 
     <figcaption>whois query on IP address 125.135.116.33</figcaption>
 </figure>
 
-1/23/18, 5:31pm UTC -0800: Using the information provided in the .csv file, I continued by investigating the .bin file located in the base folder of the disk image along with `don't tell mrs Il Ung.jpg`. My intent was to search the .bin file for strings the names and IP addresses in the extracted .csv file.
+1/23/18, 5:31pm UTC -0800: Using the information provided in the .csv file, I continued by investigating the .bin file located with `don't tell mrs Il Ung.jpg` in the base folder of the disk image. 
 
-Before my inspection of the .bin file, I accidentally clicked on the .bat file located next to it in the mounted disk image. A command prompt briefly appeared, closing itself before I could make out the message contained therein. I decided to continue my investigation of the .bin file, marking this .bat file for later investigation with FlyPaper.
+Before my inspection of the .bin file, I accidentally clicked on the .bat file located next to it in the mounted disk image. A command prompt briefly appeared, closing itself before I could make out the message contained therein. For now, I decided to continue my investigation of the .bin file, marking this .bat file for later investigation with FlyPaper.
 
 Upon opening the .bin file with FileInsight, I started the string search. Using Mr. Beek's hint regarding the "Hacked by #GOP" image, I performed an XOR text search using the keyword "SPEData.zip". This produced no results. I continued with ".zip" and "SPEData", both of which also produced no results. Finally, performing an XOR text search with "SPE", I found a series of passwords encrypted with XOR key `0x67`, starting at memory offset `0x0003EBBD`:
 
@@ -244,7 +243,7 @@ Using this XOR key, the password for JHKim4 is somewhat garbled in the hex dump;
     <figcaption>whois query on IP addresses in .bin file</figcaption>
 </figure>
 
-Mr. Beek had mentioned that these files originated in the publicly-released part of the Sony attack, and although Sony Pictures Entertainment is headquartered in Culver City, it is possible that elements of Sony's corporate HQ were targeted as well.
+Mr. Beek had mentioned that these files originated in the publicly-released part of the Sony attack, and although Sony Pictures Entertainment is headquartered in Culver City, CA, it is possible that elements of Sony's corporate HQ were targeted as well.
 
 1/23/18, 6:47pm UTC -0800: Now, I had discovered the answers to questions 1, 3 and 4; I proceeded to attempt to find answers to questions 2, 5, and 6.
 
