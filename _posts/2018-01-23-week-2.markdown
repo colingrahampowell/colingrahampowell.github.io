@@ -167,16 +167,17 @@ I downloaded the USB image, `Image_USB_Mayflower.001`, from the network share, c
 1/23/18, 4:14pm UTC-0800: I decided to start my investigation by attempting to address the first question. Using a tip from Mr. Beek, I used photorec to create a dump of deleted files, searching through the entire image. I saved the dumped files to C:\mayflower\recup_dir.1. The directory contained a number of .png, .jpg, and .exe files:
 
 <figure>
-    <img src="/assets/img/week2/hacked-by-gop.png">
-    <figcaption></figcaption>
+    <img src="/assets/img/week2/deleted-files.png">
+    <figcaption>"Directory of deleted files</figcaption>
 </figure>
 
 I navigated to `f0011336.png`, the file that Mr. Beek noted as containing a hint. Upon opening the file, the following image appeared:
 
 <figure>
-    <img src="/assets/img/week2/deleted-files.png">
-    <figcaption></figcaption>
+    <img src="/assets/img/week2/hacked-by-gop.png">
+    <figcaption>"Hacked by #GOP" image</figcaption>
 </figure>
+
 
 The URLs contained in the image were said to be key for accessing the list of usernames and passwords noted in question 3. 
 
@@ -184,7 +185,7 @@ I next dismounted and re-mounted the disk image, choosing this time to mount Par
 
 <figure>
     <img src="/assets/img/week2/drive-content.png">
-    <figcaption></figcaption>
+    <figcaption>Contents of Partition 0 of captured disk image</figcaption>
 </figure>
 
 Mr. Beek had further hinted that:
@@ -198,7 +199,7 @@ Using this information, I opened FileInsight to investigate `don't tell mrs Il U
 
 <figure>
     <img src="/assets/img/week2/pwd-il-ung.png">
-    <figcaption></figcaption>
+    <figcaption>Password hidden in hex dump of .png file</figcaption>
 </figure>
 
 1/23/18, 4:54pm UTC-0800: I next navigated to E:\ drive, using 7-zip to extract the .zip file contained in the same folder as `don't tell mrs Il Ung.jpg`. On extracting, the password was entered as `infected123!`. To avoid contaminating the drive on which I was performing my analysis, I saved the extracted .csv file to `C:\mayflower\mayflower_zip_recovered`. 
@@ -207,7 +208,7 @@ Using this information, I opened FileInsight to investigate `don't tell mrs Il U
 
 <figure>
     <img src="/assets/img/week2/suspect-csv.png">
-    <figcaption></figcaption>
+    <figcaption>.csv file containing attack target information</figcaption>
 </figure>
 
 A Google search reveals that GS Caltex and S-Oil are South Korean oil companies; the targets appear to be GS Caltex's Yeosu refinery and S-Oil's Onsan refinery, located in Yeosu and Ulsan, respectively. 
@@ -216,7 +217,7 @@ GS Caltex's IT support manager and CEO are also listed in this file, suggesting 
 
 <figure>
     <img src="/assets/img/week2/whois.png">
-    <figcaption></figcaption>
+    <figcaption>whois query on IP address 125.135.116.33</figcaption>
 </figure>
 
 1/23/18, 5:31pm UTC -0800: Using the information provided in the .csv file, I continued by investigating the .bin file located in the base folder of the disk image along with `don't tell mrs Il Ung.jpg`. My intent was to search the .bin file for strings the names and IP addresses in the extracted .csv file.
@@ -227,7 +228,7 @@ Upon opening the .bin file with FileInsight, I started the string search. Using 
 
 <figure>
     <img src="/assets/img/week2/spe-search-xor-067.png">
-    <figcaption></figcaption>
+    <figcaption>Decrypted .bin file containing username/password combinations</figcaption>
 </figure>
 
 Here, I noticed the following strings, which appear to be usernames and passwords:
@@ -236,11 +237,11 @@ Here, I noticed the following strings, which appear to be usernames and password
 - Username: `Kmanku-1`, Password: `M@nday77`
 - Username: `MMcLean3-1`, Password: `@Smiley91`
 
-Using this XOR key, the password for JHKim4 is somewhat garbled in the hex dump; it is possibly something  slightly different, perhaps `TomorrowTTjm4`. A `whois` query on the IP addresses that follow these usernames and passwords reveals them to be Japanese in origin; specifically, belonging to an organization in Chiyoda-Ku, Tokyo, near where Sony's corporate headquarters are located:
+Using this XOR key, the password for JHKim4 is somewhat garbled in the hex dump; it is possibly something  slightly different, perhaps `TomorrowTTjm4`. A `whois` query on the IP addresses that follow these usernames and passwords reveals them to be Japanese in origin; specifically, belonging to an organization in Chiyoda-Ku, Tokyo, near Sony's corporate headquarters:
 
 <figure>
     <img src="/assets/img/week2/whois-tokyo.png">
-    <figcaption></figcaption>
+    <figcaption>whois query on IP addresses in .bin file</figcaption>
 </figure>
 
 Mr. Beek had mentioned that these files originated in the publicly-released part of the Sony attack, and although Sony Pictures Entertainment is headquartered in Culver City, it is possible that elements of Sony's corporate HQ were targeted as well.
@@ -255,7 +256,7 @@ I returned to the mysterious .bat file located in the E:\ directory, starting Fl
 
 <figure>
     <img src="/assets/img/week2/bin-strings.png">
-    <figcaption></figcaption>
+    <figcaption>String dump of .bin file</figcaption>
 </figure>
 
 The commands:
@@ -277,7 +278,7 @@ Immediately, I notice FakeNet outputting this message:
 
 <figure>
     <img src="/assets/img/week2/redir-socket.png">
-    <figcaption></figcaption>
+    <figcaption>FakeNet output: attempted socket connections</figcaption>
 </figure>
 
 So, it appears that this malware is looking to connect to a socket at several IP addresses; this is being redirected by FakeNet. Looking through Process Monitor, I notice that `rootkit.exe` is reading from itself, possibly looking for the series of usernames and passwords stored within it. At 8:35pm system time, it creates a second executable, named `igfxtrayex.exe`. 
@@ -290,21 +291,21 @@ Here, I investigate Process Monitor, which displays a long series of `RegOpenKey
 
 <figure>
     <img src="/assets/img/week2/taskhost-killed.png">
-    <figcaption></figcaption>
+    <figcaption>Windows Explorer crashing - note "taskhost.exe" files</figcaption>
 </figure>
 
 Looking through Process Monitor, I notice that `taskhostmw.exe` performs multiple `SetDispositionInformationFile` operations, setting Delete to True; using Process Monitor's Filter tool, I displayed only files deleted by `taskhostmw.exe`; the resulting list of deleted processes is gigantic: 
 
 <figure>
     <img src="/assets/img/week2/taskhostmw-killed.png">
-    <figcaption></figcaption>
+    <figcaption>taskhostmw.exe file deletions</figcaption>
 </figure>
 
 `taskhostom.exe` is analyzed in a similar fashion, using Process Monitor's Filter: notice that here, it is deleting FileInsight plugins.
 
 <figure>
     <img src="/assets/img/week2/taskhostom-killed.png">
-    <figcaption></figcaption>
+    <figcaption>taskhostom.exe file deletions</figcaption>
 </figure>
 
 Generally, these processes are destroying thousands (really, hundreds of thousands) of files on the target computer; it is likely that they are attempting to propagate through a local network using known access credentials (found in the .bin file analyzed above and run as `rootkit.exe`); once this process it complete, `rootkit.exe` deploys the `taskhost` executables, which destroy the content of the host's hard drive. Navigating through the C:\ drive, I notice that many executables, shortcuts, and directories have simply disappeared, with more disappearing as the analysis continues.
@@ -325,7 +326,7 @@ There were also important deleted files on the captured disk image itself, inclu
 
 <figure>
     <img src="/assets/img/week2/oil-refinery.png">
-    <figcaption></figcaption>
+    <figcaption>Oil refinery image found among deleted files</figcaption>
 </figure>
 
 To a certain extent, this corroborates the information contained in the .zip file discussed above. Other DPRK-centric material (such as the image of Kim Il Sung in `f0013896.png`) supported the notion that this attack originated there.
