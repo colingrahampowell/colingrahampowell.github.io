@@ -1,0 +1,478 @@
+---
+layout: post 
+title:  "Week 3"
+date:   2018-01-29 17:00:00 -0500
+categories: dada 
+---
+
+The first two weeks of CS373 addressed concepts relating to malware analysis and forensic computing. This week, our focus shifted to malware defense, or the process of protecting against known malware threats. Delivering the lectures was Craig Schmugar, a researcher at McAfee with many years of experience in the field, along with a unique background: Mr. Schmugar related that he got his start in malware research while working as a network administrator at Northwestern University. Following the outbreak of the Happy99 worm in January 1999, Mr. Schmugar needed to write software to clean the virus from network computers; he was able to parlay this work into a career at McAfee. As someone who has also traveled a less-than-direct path into CS, I enjoy hearing anecodotes like this. 
+
+## Concepts
+
+Mr. Schmugar began is lecture by presenting a detailed _attack graph_, a diagram representing the most common malware attack vectors and behavioral patterns. As the lecture progressed, this diagram was broken down into its constituent parts, each of which was discussed in detail. This reinforced the information presented by Mr. Beek in Weeks 1 and 2, condifying strategies (use of keyloggers, registry modifications, installing rookits) and intended outcomes (such as stealing user info or enlisting the user’s computer in a botnet). In malware defense, it is important to know how to identify specific malware behaviors, as it is difficult-to-impossible to adequately defend against a threat without understanding its intent. 
+
+The attack graph is divided into four phases: _First Contact_, _Local Execution_, _Establish Presence_, and _Malicious Activity_.
+
+_First Contact_ describes how malware typically reaches its target. Common methods include sending emails from hacked accounts with benign-sounding attachments, “poisoning” search results by gaming Google’s search algorithms to place a malicious page into the first page of results for common search queries, implementing “watering hole” attacks in which a central, oft-used resource like Wordpress is exploited and poisoned, and simple physical access such as inserting a USB drive. 
+
+_Local Execution_ describes how malware is executed on a local system. A common method here involves social engineering, or tricking the user into running the malware themselves by masking it as a different application. Attacks often exploit operating system features, such as Microsoft’s Autorun functionality, which was originally designed to automatically execute software loaded from a CD-ROM. Exploitation of less secure software is another common method – for example, browser plugins can contain exploits that allow for arbitrary code execution. 
+
+In the _Establish Presence_ phase, malware typically blends in or hides itself in arcane or legitimate-sounding filenames and directories – recall the `svchest.exe` executable discussed in Week 1. Malware will change creation or date modified time stamps to avoid detection with Windows Search and use signed files to appear legitimate. To hide itself malware often takes the form of a bootkit, which infects and changes the Master Boot Record, or a rootkit, which wreaks havoc after assuming root privileges. Once malware blends in, it often attempts to persist somehow; in Windows, this is commonly accomplished by modifying the registry’s Run keys or placing the malware in the StartUp folder. Bootkits can modify the Master Boot Record in such a way that they are executed at system startup; before Windows itself boots. Other methods include DLL hijacking, which replaces a benign DLL file with malicious code that executes whenever that DLL is loaded. In Windows, at least, there are many, many ways to accomplish this goal, and thus it is relatively simple for malware to persist on a target’s computer. Mr. Schmugar discussed a few more recent methods for persistenc, including manipulating proxy auto-config settings to redirect specific hostnames to malicious imposters; visiting these sites will cause any deleted malware to be downloaded again 
+
+The final phase, _Malicious Activity_, describes how attackers harvest information from the host. Attackers want information from their targets – usernames and passwords, personal data, and so forth, and will use methods like keylogging, man-in-the-middle or man-in-the-browser snooping, remote access, and so forth. If malware has reached this phase in an attack, any malware defense has failed, and the user has been exposed to a great deal of harm.
+
+But, how can these attacks be prevented or blocked? Mr. Schmugar returned to the attack graph to show that there are prevention and defense methods that can be undertaken at each of its phases. At the First Contact phase, anti-spam, web reputation, network firewalls, and script blockers can reduce the chance of an encounter with a malware threat. There was a brief discussion about the App Store model, which is a somewhat effective means of providing users with a “walled garden” of mostly-benign software. At more advanced phases, AV software, client-side content filtering and HIPS (Host Intrusion Prevention Systems) take over. The best approach is always to employ a layered strategy, and there should be protection against each phase of the attack; what may be missed by one tool can later be caught by another.
+
+The second portion of Mr. Schmugar’s lecture delved deeper into malware defense strategies. He began by presenting a graphic showing malware defense strategies as concentric rings: at the outer rings, network firewalls and network intrusion prevention systems, and at inner rings, web or network reputation, host firewalls, HIPS, and anti-malware or access control software. Mr. Schmugar noted that these rings or levels all share a common thread: they depend on content to identify threats. Each defense system must be updated as new threats are identified; products must deliver enough functionality to allow content to adequately perform its tasks. 
+
+With another graphic, Mr. Schmugar showed us concentric rings of endpoint dependencies for a management server: point AV products depend on scanner cores, (e.g., a rootkit scanner), which depend on engines, which depend on content. Here we observed that the content used drives the software, and ultimately determines its effectiveness. 
+
+Modern anti-malware software has features far beyond the traditional file scanning or on-demand scanning of older AV products. Current anti-malware software includes capabilities such as registry and cookie scanning, memory scanning, and decomposition (e.g., breaking open and looking inside compressed files). Most of these features use content rules to identify malicious or unwanted software. 
+Although McAfee’s content-writing software is proprietary, the yara pattern-matching language can allow users to write their own content, scanning files or memory in search or certain strings or byte patterns. The lecture continued with a few labs in which we ourselves wrote yara rules to identify example malware samples. These are discussed in detail in “Labs”, below.
+
+Next, Mr. Schmugar presented a brief lecture on current trends in malware defense, including automation of content rules. As of July 2014, McAfee estimates that there are 300,000,000 unique malware binaries in existence, with many thousands of new malicious binaries being discovered daily. Clearly, there is not sufficient manpower to address this threat. Anti-malware automation offers a scalable, consistent, more precise, and faster solution – computers can analyze and evaluate a particular binary several orders of magnitude more quickly than a human. Automated solutions are not perfect, however – they are prone to evasion by VM-aware malware, the networks and systems on which automated anti-malware services run can be prone to probing or DoS attacks. Mr. Schmugar noted that the most accurate analyses are conducted by humans, but computers can be very useful in handling the bulk of this work. 
+
+Cuckoo is a popular automated analysis tool used by independent researchers. It is essentially a replication system, in which a host controls a series of virtual machines connected over an isolated virtual network. Cuckoo passes suspicious files to the VMs, giving them test parameters; Cuckoo then creates processes on the VMs, injecting these processes with its own DLLs to track Windows API calls. A few measures are taken to prevent VM-aware malware from changing its behavior: the name of the Cuckoo DLL is randomized, and the mouse cursor is periodically moved around the screen to simulate user activity. 
+
+Data is returned from these VMs back to the host machine, which can collect and report any results. These can be cross-indexed with services like Malwr, a repository of information about specific malware binaries, organized by file hashes. Generally, however, Cuckoo provides a wealth of information in its results: traces of Win32 API calls performed by the malware and all spawned processes, files that are created, deleted, or downloaded during execution, memory dumps, network traffic traces, and screenshots of the Windows desktop as the malware executes. From this data, a fairly detailed portrait of a sample’s behavior can be created. To observe this ourselves, we re-created our Lab 1 analysis using Cuckoo, observing the wealth of data contained in the .csv-formatted logs that it generates. 
+
+A challenge with running automated analysis systems such as Cuckoo lies in determining the correct software patch levels to install on each VM – if the software installed on the VM doesn’t match the version needed by the malware, its behavior will differ significantly. In uncommon circumstances, an analyst may have access to an infection “in context” – as it is occurring on a host computer – and can use this context to determine the proper software versions for replication. Often, however, a researcher may need to run software on a series of differently-configured VMs to effectively replicate the malware’s behavior.
+
+Mr. Schmugar concluded his lectures by assigning us a challenge: a blog post-style report and analysis of one of a series of four samples provided to us. This analysis is located in the “Blog Post” section, below.
+
+## Labs:
+
+The first three labs this week involved writing yara rules for provided malware samples. 
+
+### Yara Lab 1:
+
+This lab involved analysis of a directory containing seven samples. Most had been packed with UPX, although using FileInsight I could still make out partial phrases or small strings within the hex dumps. One file (filename 6f29…) contained the string `DivX`, another (filename 6bb0…) contained `kshop`, others included strings like `AIM`; these were all located in similar addresses within the files analyzed. One file, however (filename a4a2…), was not packed: here, I observed that the strings in the other files were in fact bits and pieces of malicious filenames, masquerading as movie titles (Harry Potter makes an appearance), keygens, password crackers, and so forth. There are also filepaths corresponding to registry keys for certain early-2000s peer-to-peer software, such as Kazaa or Morpheus (may they both rest in peace). Among all observed samples, however, the string `Jenna Jam` (part of “Jenna Jameson”) was in cleartext; as such, I decided that it was a good candidate for inclusion in my yara rule. The written rule is as follows:
+
+```
+rule Sytro {
+	strings:
+		$jenna = “Jenna Jam” ascii
+
+	condition:
+		all of them
+}
+```
+
+Using FileInsight’s “Find in Folders” feature, I developed a quick method for searching for matching patterns or strings in multiple files: after finding `Jenna Jam`, I could simply use “Find in Folders” to confirm that the same string was present in each of the seven files observed.
+
+Testing this rule on C:\Windows\system32 yielded no results:
+
+<figure>
+    <img src="/assets/img/week3/labs/lab1-sys32-result.png">
+    <figcaption>Lab 2: no false positives found in system32</figcaption>
+</figure>
+
+And testing on the directory containing the lab’s malware samples produced a result for each:
+
+<figure>
+    <img src="/assets/img/week3/labs/lab1-malware-result.png">
+    <figcaption>Lab 2: all samples identified</figcaption>
+</figure>
+
+To confirm that I was calling the `yara32.exe` executable with the correct arguments from the command line, I wrote a few sample yara rules to capture ubiquitous strings like “Reg” or “exe” – both yielded numerous results, confirming that my earlier results had been generated correctly. 
+
+Following my analysis, I viewed Mr. Schmuger’s summary and recap of the first lab to confirm that I was on the right track. It seemed that I was generally correct in my rule-writing, although a single rule consisting of the string `Jenna Jam` may generate too many false positives to be truly robust (think of how many files or usernames could contain that string). For next time, I learned that rules should be as specific as possible for the sample being analyzed – ideally, a yara rule should uniquely identify that file. False positives are harmful and undesirable in the AV world, and so rules should always be written to avoid them. In my case, adding a second common string (such as `AikaQ`) would have strengthened the rule and reduced the possibility for false positives. 
+
+### Yara Lab 2
+
+Here, I analyzed six malware samples located in the same directory. Each sample is structured differently, but all appeared related in that they seemed to be HTML-based, containing an HTML object element referencing the same ActiveX control (with identical CLSIDs). As I would learn through research (such as [this blog post][active-x]), ActiveX controls are a common malware attack vector, as they can be downloaded and executed by programs like Internet Explorer with little interference. In this case, all samples appear to be using the same ActiveX exploit, although one sample “obfuscates” its CLSID string by exchanging an ASCII dash (`0x2D`) with its URL-encoded equivalent: (`%2D`, or `0x253244`). This makes writing a single yara rule more complex, as I must now gracefully accommodate extremely similar -but not identical- strings that are present in each file.
+
+<figure>
+    <img src="/assets/img/week3/labs/lab2-classid.png">
+    <figcaption>The recurring CLASSID</figcaption>
+</figure>
+
+To accomplish this, I took the entire CLSID present in each of the files, representing it as a byte string instead of an ASCII string. Where dashes were present, I used yara’s syntax for including alternative sub-strings within a byte string:
+
+```
+rule CVE20082551 {
+	strings:
+		//c1b7e532-3ecb-4e9e-bb3a-2951ffe67c61
+		$s1 = { 63 31 62 37 65 35 33 32 ( 25 32 44 | 2D ) 
+		33 65 63 62 ( 25 32 44 | 2D ) 34 65 39 65 
+		( 25 32 44 | 2D ) 62 62 33 61 ( 25 32 44 | 2D ) 
+		32 39 35 31 66 66 65 36 37 63 36 31 }
+
+	condition:
+		all of them
+}
+```
+
+Here, observe the `( 25 32 44 | 2D )` syntax: this allows my rule to circumvent the obfuscation present in the observed files by allowing the rule to choose between the unencoded ASCII dash and its URL-encoded equivalent. 
+
+This rule produced the expected results – no hits in `C:\windows\system32`:
+
+<figure>
+    <img src="/assets/img/week3/labs/lab2-sys32-result.png">
+    <figcaption>Lab 2: no false positives found in system32</figcaption>
+</figure>
+
+And, hits for each file in the directory containing the samples:
+
+<figure>
+    <img src="/assets/img/week3/labs/lab2-malware-result.png">
+    <figcaption>Lab 2: all samples identified</figcaption>
+</figure>
+
+This was a somewhat more complicated lab, but it was interesting to learn more advanced yara syntax. Using byte strings can give rules much greater flexibility and reduce the number of strings necessary to create an effective rule. There are many different ways to write the rule above, however, and Mr. Schmugar used “jumps” instead of this OR syntax in the rule that he wrote. It became clear that writing an effective yara rule is as much an art as it is a science, and that writing rules for even moderately complex cases requires lots of practice and experience.
+
+### Yara Lab 3:
+
+In our final yara lab, I analyzed a significantly more complex group of 22 malware samples. It became clear fairly early that a yara rule based on a single string would not be possible here. These samples also appeared to be connected, but their relationship was less direct – most contained references to “tuguu.com”, which is a known adware distributor (or “Internet marketing service”, as they identify themselves) located in Spain. Other found keywords included Spanish-language strings such as `instalarEXE`, `getNomostradas`, and `existeClavePropiaAVG` (in English, `existsKeyForAVG`), supporting the notion that this group of malware likely originates from Tuguu. The function name `existeClavePropiaAVG` is very suspicious, as it suggests that this malware family to some extent searches for existing anti-virus software on the target system. I also found numerous references to DIgiSign and GoDaddy; both of these services are used for code signing or credentialing. 
+
+<figure>
+    <img src="/assets/img/week3/labs/lab3-tuguu.png">
+    <figcaption>Lab 3: appearance of "tuguu" string</figcaption>
+</figure>
+
+<figure>
+    <img src="/assets/img/week3/labs/lab3-existeClave.png">
+    <figcaption>Lab 3: appearance of "existeClavePropiaAVG" and "getNomostradas"</figcaption>
+</figure>
+
+Interestingly, one file (having a filename beginning with `cb6f…`) stood out in my analysis. Other samples in the directory imported the DLLs KERNEL32, ADVAPI32, and mscoree; `cb6f…` imported a different set of DLLs, including GDI32, USER32, OLEAUT32, and OLEACC; additionally, it imported WINSPOOL.DRV, which contains system calls used to manage the printer. USER32 is used for building user interfaces, and GDI32 renders elements in that user interface. It appears that this particular file is meant to be a full-fledged program, with some form of graphical interface. Perhaps others are simply add-ons or plugins. 
+
+<figure>
+    <img src="/assets/img/week3/labs/lab3-cb6f-DLLs.png">
+    <figcaption>Lab 3: suspicious DLLs from file "cb6f..."</figcaption>
+</figure>
+
+Unfortunately, the same string could not be identified in all 22 files; not all contained a reference to tuguu.com or the `existeClaviaPropiaAVG` string. These two strings identified _most_ of the files, however, and so I turned to the yara editor’s auto-generating rule feature to narrow down a list of strings common to the remaining files. I used known-unrelated malware from Lab 1 to filter out common system calls imported from DLLs. Unfortunately, no decipherable string resulted here; just a series of gibberish collections of characters. I knew that including this in yara rule was not ideal, but decided that, for a quick triage, this would do:
+
+```
+rule domai {
+	strings:
+		//
+$s1 = “existeClavePropiaAVG”
+$s2 = “tuguu”
+$s3 = {3C 28 3C 44 3C 4C 3C 70 3C 7C 3C}
+
+	condition:
+		any of them
+}
+```
+
+Note that here, I used the “any of them” condition to identify files that contained any one of the strings in the rule. As in the rules above, this produced the intended results for searches of both the `C:\windows\system32` directory (no files identified), and the directory in which the malware was located (every file identified). 
+
+Following Lab 3, It became clear that, sometimes, a more brute force approach is acceptable in a pinch. Ideally, one would write rules in which the content of each rule is fully understood – I’m not sure what the byte string in `$s3` accomplishes, or if it represents an important component of the malware. A more complete approach might involve de-compiling or otherwise deciphering the executables containing that byte string to better identify a representative portion of the file.
+
+## Blog Post:
+
+McAfee estimates that there are 300,000,000 unique malicious files in existence, with thousands of new samples being discovered each day. These files range from relatively benign and easily-removable adware to advanced, complex ransomware. Anti-virus software is an excellent defense method, especially when grouped with other measures, but not every malicious file can be captured by even the most advance AV software – the sheer volume of unique files guarantees that, sometimes, an as-yet-unknown malware sample could find its way to your computer. But, what is a user to do? It can be difficult to ascertain a file’s intent – even after running it – without knowing what to look for in the file’s behavior. Using free and open-source analysis software, I show how to look for common malware traits, and how to develop a deeper sense of what a particular malware sample might do to your computer. Do you want to do a bit of amateur sleuthing? Worried that you might be an unwilling host for a malicious executable? Read on. 
+
+### Initial Investigation
+
+I began with four potentially-malicious files, all located in the same Windows 7 directory. I didn't know which (if any) of these had ill intent, and so I began my investigation by quickly assessing each file using a few readily-available static analysis tools. Once finished, I selected a single file for a more thorough analysis. 
+
+The first file, with hash 069d5b62254dc582f3697847c16710b7, is almost assuredly malware. A quick strings dump with McAfee’s FileInsight software revealed a series of very suspicious filenames and DLLs contained in the executable: I noted `eXplOrER.Exe`, likely named in an attempt to hide its purpose; other executables like `QQLogin.exe`, or `DNF.Exe` are not standard Windows filenames. Further into the strings dump I found traces of an HTTP request to an undetermined IP address which POSTs form data to `/pobao/GetTuPian.asp`. These are prime clues that the sample is up to no good, and we can fairly safely characterize it as malware. 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/initial/069d-executables.png">
+    <figcaption>First sample: suspicious executables</figcaption>
+</figure>
+
+The second file in the group has a hash of 00670f2b9631d0f97c7cfc6c764dd9d9. Interestingly, FileInsight’s PE-Info-Lite plugin produced a value in its “original filename” field: `hau.exe`. This file contains a great deal of Visual Basic cod - in fact, its lone imported DLL is MSVBVM60, the Microsoft Visual Basic virtual machine. Another strings dump in FileInsight reveals more suspiciously-named executables (such as `qusla.exe`), along with command-line scripts for adding read-only, system, and hidden file attributes. I also noted direct modification of the Registry’s run keys, which is typical malware behavior: 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/initial/0067-strings.png">
+    <figcaption>Second sample: Registry modifications, suspicious URLs</figcaption>
+</figure>
+
+This sample also includes very suspicious URLs in its string dump: `3392.cn` is not a familiar website. I’m fairly certain that this file is malicious as well.
+
+The third file, with hash 4844fd851088alle240cfe5b54096209, appears to be benign. It is not packed, and investigation with FileInsight reveals that the binary contains a reference to a product named LADS, created by Frank Hayne Software. A Google search revealed that LADS is a [legitimate product][LADS] used for Listing Alternate Data Streams of NTFS directories (hence the name). A strings dump in FileInsight didn't turn up any suspicious-looking executable names, hostnames, or IP addresses, and the DLLs loaded with the file are consistent with what would be expected for this software. 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/initial/4844-pe-info.png">
+    <figcaption>Third sample: legitimate, copyrighted software</figcaption>
+</figure>
+
+The fourth and final file (with hash a1874f714f7a15399b9fae968180b303), however, is almost certainly malicious. It is packed with UPX, doesn’t provide a sure sign of malicious intent, but certainly suggests it. As the file is packed, its Strings dump is mostly gibberish, although one can pick out intriguing tidbits such as `cgi-bin/pe`, suggesting a network connection, and `qq.com/g`, suggesting that the software interacts with `qq.com`, the website for the popular Chinese messaging app. It does begin with the ‘MZ’ magic number, which identifies it as a Portable Executable (PE) file. This software is something of a mystery, which makes it an excellent choice for deeper analysis. 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/bad/bad-strings.png">
+    <figcaption>Fourth sample: packed binary</figcaption>
+</figure>
+
+### Analysis: 
+
+I decided to dive a little deeper into this fourth file (with hash a1874f714f7a15399b9fae968180b303) to determine what it does, how it works, and how it persists. 
+
+Before moving on from my static analysis of this file, I took a closer look at the DLLs that it imports: 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/bad/bad-dlls.png">
+    <figcaption>Fourth sample: imported DLLs</figcaption>
+</figure>
+
+There isn’t much here of note, although the RegCloseKey function suggests that this sample may surreptitiously modify or inspect the registry – a common malware characteristic. 
+
+As noted above, however, this file is packed, and as such I felt that I had discovered as much as I could from a simple static analysis. To determine this file’s intent, I had to run it, collecting detailed observations of its behavior. Enter Cuckoo, analysis software used to perform automated malware analysis. In professional or academic settings, Cuckoo is often run from a separate host, which controls a series of virtual machines, each of which is running some form of the malware sample under analysis. Once analysis is complete, these virtual machines can report their results back to the host machine, in the form of memory dumps, lists of Win32 API calls, copies of files that are created, deleted, or downloaded by the malware during execution, and so forth. In this case, I just ran Cuckoo itself on a virtual machine, saving the results directly in the same VM for further analysis. 
+
+Before starting Cuckoo, I started FakeNet, a useful piece of software that simulates a network connection – and logs any network activity - without exposing our VM to the Internet. With FakeNet in place, I was able to observe the entirety of any network communication originating from our sample. 
+
+I ran Cuckoo from a Python script called “analyzer.py”; this script is configured to analyze a sample named `bad` located on the Desktop; as such, the suspicious file was renamed `bad` and copied to the Desktop. Upon running Cuckoo from the command line, I noticed a long sequence of text output capturing files created, files destroyed, and processes started: immediately, the filenames `ntshruis2.dll`, `prints.exe`, `Deleteme.bat`, and `qinput.png` were apparent. `bad` places these files in a suspiciously obscure Windows folder: `C:\Users\Admin\AppData\Local\Temp`, suggesting that its intent is to hide these files in a less-visible part of the file system. From this behavior, I could infer that `bad` is likely a “dropper”; a file that creates other malware as it executes. 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/cuckoo-running.png">
+    <figcaption>Cuckoo in action</figcaption>
+</figure>
+
+Once Cuckoo finishes running, I could look through the logs it generates to obtain a detailed sense of `bad`’s behavior as it runs. I began with the Win32 API traces (at C:\cuckoo\logs), specifically the log pertaining to `bad`. I could first see that `bad` seems to copy itself to `C:\Users\Admin\AppData\Local\Temp` as `prints.exe`. A comparison of file hashes with FileInsight’s PE-Info-Lite plugin confirmed that this is indeed the case – the two hashes are identical. 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/bad/bad-copies-to-prints.png">
+    <figcaption>Bad copying itself to prints.exe</figcaption>
+</figure>
+
+Next, `bad` creates `Deleteme.bat`, `qinput.png`, and `ntshruis2.dll` in the same folder:
+
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/bad/bad-create-file.png">
+    <figcaption>Bad writing suspicious files to disk</figcaption>
+</figure>
+
+It also calls NtOpenFile on each of these, probably to ensure that they were successfully created. Finally, it creates processes running `Deleteme.bat` and `prints.exe`: 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/bad/bad-create-process.png">
+    <figcaption>bad creating Deleteme.bat and prints.exe processes</figcaption>
+</figure>
+
+Curiously, `bad` itself disappears after it is run – this was later verified by re-running it multiple times following my analysis. 
+
+Next, I examined the activity of `prints.exe`: the Cuckoo logs indicates that it loads a number of standard Windows DLLs (advapi32.dll, oleaut.dll, user32.dll) and procedures, including the getKeyboardType function – perhaps this malware includes a key-logger component. Notably, however, is this series of actions, in which `prints.exe` modifies the Run keys in the Windows registry: 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/prints/prints-run-keys.png">
+    <figcaption>prints.exe modifying Run keys in registry</figcaption>
+</figure>
+
+Navigating to this location with RegEdit confirms this change – prints.exe and WinSysQQ have been added as key/value pair, which will cause `prints.exe` to re-run itself whenever Windows boots. This is prime malware behavior - most malware wants to persist on a user’s computer, and modifying the registry in this way is a common trick used to do so.
+
+Also important is the fact that `prints.exe` loads `ntshruis.dll` just before it delays its execution; this confirms how `ntshruis2.dll` is tied to other files associated with this sample – it acts as a DLL for `prints.exe`. Given the fact that `prints.exe` is packed, `ntshruis2.dll` will likely be my best source for any information regarding the intended behavior of `prints.exe`.
+
+The other captured log in this directory contains a series of command-line instructions carried out by `cmd.exe`. First, I noted that `cmd` enumerates a number of registry keys at `Software\Policies\Microsoft\Windows\Safer\CodeIdentifiers\`, a portion of the registry that generally pertains to [software restriction policies][safer-exp], used to (as the name suggests) restrict access or modification to certain software. Following this, `cmd` deletes `bad`, then `Deleteme.bat`:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/cmd/cmd-delete-bad.png">
+    <figcaption>cmd.exe deleting bad and Deleteme.bat</figcaption>
+</figure>
+
+It is not immediately clear which process calls `cmd` to carry out these instructions, but perhaps further analysis will reveal the culprit. 
+
+Before proceeding into static analysis of the files that `bad` creates, I checked the output of FakeNet. Sure enough, network activity can be observed:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/prints/prints-make-conn.png">
+    <figcaption>FakeNet output</figcaption>
+</figure>
+
+So, at some point in the malware’s execution, it (or one of the files that it creates) attempts to send an HTML form via GET request to `115.230.126.188:99`, specifically the path `/TJ.asp?A=whileInject-j9`. The name “inject” suggests possible script injection, although I have not uncovered other evidence supporting this claim. It is also possible that this message is sent simply as an alert to the attacker indicating that another host has been infected. A `whois` query on the IP address identifies it as Chinese in origin.
+
+So far, I knew that:
+-	This sample is almost certainly malware.
+-	It creates four files – including a DLL and an executable, placing them into an obscure Windows directory. The original sample is deleted after these four files are dropped.
+-	It modifies the Run keys in the Windows Registry to ensure that it persists.
+-	It attempts to communicate with an unknown Chinese IP address, sending form data in a GET request. 
+
+I was beginning to get a clearer picture of how it accomplishes its mission, but couldn’t yet surmise what, in fact, this sample is built to do. Further analysis was needed. 
+
+Sometimes it can be helpful to perform a similar analysis using different software; what is not clear with one presentation may be much clearer in another. With this in mind, I took a snapshot of the VM to mark my process, and returned to the original snapshot created before my analysis. Here, I used FakeNet in conjunction with Windows SysInternals’ Process Monitor to perform a dynamic analysis of `bad` and its associated files as they ran. Process Monitor is a very handy tool that logs all process activity as it runs, allowing users to filter activity by process name, PID, pathname, and so forth. 
+
+With FakeNet and Process Monitor in place, I performed the same series of analytical steps, copying the sample under test to the Desktop, renaming it `bad`, and observing its activity with Process Monitor. Using Process Monitor’s Filter tool, I was able to isolate activity originating only from `bad` and `print.exe`, the two executables associated with this sample. I noticed something interesting: `prints.exe` modifies the Registry more thoroughly than first anticipated:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/prints/run-2-prints-delete-reg.png">
+    <figcaption>prints.exe deleting registry values</figcaption>
+</figure>
+
+Here, `prints.exe` is attempting to delete any existing Registry values associated with proxy bypasses, URL auto-configs, and proxy overrides. Next, it sets other Registry values, overriding any non-default connection settings by changing the 9th byte in the `DefaultConnectionSettings` entry to `09` (see [here][def-conn] for more detail):
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/prints/run-2-prints-set-reg-values.png">
+    <figcaption>prints.exe setting registry values</figcaption>
+</figure>
+
+In addition, any proxies are disabled by setting `ProxyEnable` to 0. After taking these precautions, `prints.exe` makes the HTTP GET request to the IP address observed in the FakeNet output; this behavior suggests that `prints.exe` is configuring the infected host’s Internet connection settings to increase the chances that such GET requests are delivered successfully.
+
+I was curious to see how `prints.exe` behaved upon system restart; upon restarting Windows in my VM, and starting my trusty FakeNet and Process Monitor tools, I observed (after filtering Process Monitor’s stream to show only activity from `print.exe`) that, now, `prints.exe` is simply looking for a particular `.ini` file:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/prints/prints-looking-for-info.png">
+    <figcaption>prints.exe looking for .ini file</figcaption>
+</figure>
+
+It appears that `prints.exe` is attempting to discover an initialization file corresponding to Tencent QQ; this is consistent with the `QQ` strings discovered earlier in my analysis. The desired file doesn’t exist on the host computer, however, and so the function call repeatedly returns PATH NOT FOUND.
+
+Now, I was really curious – what would happen if I _created_ a file named `UserDataInfo.ini` having the same path? I tried it, and here’s what happened:
+ 
+<figure>
+    <img src="/assets/img/week3/blog-entry/prints/prints-reads-ini.png">
+    <figcaption>prints.exe reading .ini file</figcaption>
+</figure>
+
+`prints.exe` finds the file, locks it, reads it, unlocks it, and closes it. Once `UserDataInfo.ini` was created, this process repeated ad nauseum; either `prints.exe` had not found what it was looking for, or it was actively looking for changes to this file.
+
+Dynamic inspection with Process Monitor and FakeNet revealed a few important clues. The behavior demonstrated by `prints.exe` suggests that it is attempting to steal user login credentials for the Tencent QQ service, which, importantly, [also supports online shopping][tencent-qq]. This sample’s particular method for coaxing these credentials from a user was still unclear, however; I hadn’t coaxed the malware into revealing its secrets just yet. 
+
+I felt that I had explored as much of the software’s outward behavior as possible, and so I returned to my post-Cuckoo snapshot to perform a static analysis of the four files (`Deleteme.bat`, `prints.exe`, `qinput.png`, and `ntshruis2.dll`) associated with the `bad` sample. To do so, I navigated to `C:\cuckoo\files`, where I was greeted with four folders, each containing a copy of one of the files created or destroyed during `bad`’s execution. As I had confirmed that `prints.exe` was a copy of `bad`, I began by inspecting `Deleteme.bat`, which `bad` creates as a process before it closes. Opening `Deleteme.bat` in the Notepad++ text editor revealed the following:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/deleteme-deleting.png">
+    <figcaption>Deleteme.bat script</figcaption>
+</figure>
+
+This is a simple command-line script that attempts to delete `bad` until it succeeds, then deletes itself (`%0` is a reference to the source of the script - `Deleteme.bat` itself). So, the mystery of `bad`’s disappearance has been solved: `bad` spawns a batch file that wipes it away without notifying the user.
+
+Onward to `qinput.png`. This is a simple .PNG file; opening it reveals the following image:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/qinput.png">
+    <figcaption>qinput.png mock login screen</figcaption>
+</figure>
+
+From my QQ research, I could identify the penguin logo as that of the QQ messaging app. This image has the look of a login page; to confirm, I used [Online OCR][online-ocr] to generate a text file containing Chinese characters scanned from the image. Using Google Translate, these characters translate as follows:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/translated-qinput.png">
+    <figcaption>qinput.png, roughly translated</figcaption>
+</figure>
+
+Now, I was getting somewhere. This image suggests that the malware is intended to trick users into supplying their username and password, perhaps relaying this username and password to the IP address listed above.  
+
+Next, to `ntshruis.dll`; as `prints.exe` is packed, I suspected that `ntshruis2.dll` would be my best source of clues in determining what `prints.exe` intends to do. I opened `ntshruis2.dll` with FileInsight, and noticed a detailed list of DLL imports:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/ntshruis/ntshruis-dlls.png">
+    <figcaption>DLLs imported by ntshruis2.dll</figcaption>
+</figure>
+
+A few interesting libraries are imported here, including `wininet.dll`, which provides functions for handling Internet connections, `gdi32.dll`, which supports drawing functions, and user32.dll, which implements Windows user interfaces. This suggests that `ntshruis2.dll` provides functionality for displaying some form of user interface – perhaps a menu, windows, or – as is likely the case here – an image. After looking through these DLLs, I’m fairly certain that part of the malware’s function involves creating some form of fake login screen with `qinput.png`, using it to intercept login data from unsuspecting users. 
+
+Further strings inspection reveals the following familiar path: 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/ntshruis/ntshruis-first-conn-attempt.png">
+    <figcaption>URL matching the connection attempt found earlier</figcaption>
+</figure>
+
+Note the `TJ.asp?A=whileInject` string – this is what `prints.exe` was attempting to deliver form data to during testing. Also, observe that the string `QQ.exe` is present in multiple locations, again suggesting that the malware is looking to harvest data from users of the Tencent QQ service.
+
+More interesting strings were present in the file, including these URLs:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/ntshruis/ntshruis-missing-login.png">
+    <figcaption>GET query strings with missing uin fields</figcaption>
+</figure>
+
+Note that the `uin` parameters in `http://check.ptlogin2.qq.com/check?regmaster=&uin=` and `http://captcha.qq.com/getimage?uin=` are left empty, perhaps indicating that it is later filled in by the malware itself. These URLs appear related to login activity, suggesting that the malware is either logging in without the user’s consent or snooping for user login data. 
+
+I next observed a nearly-full HTTP request header; notably, the `Cookie` field was missing a value. It is possible that this cookie is meant to be filled by a separate function call; this is sometimes used by attackers to disguise malicious browser manipulation.
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/ntshruis/ntshruis-http-request-cookies.png">
+    <figcaption>unfilled Cookie field in HTTP header</figcaption>
+</figure>
+
+Elsewhere in the strings dump, I observed the following:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/ntshruis/ntshruis-personal-balance.png">
+    <figcaption>Partial URL referencing a personal balance</figcaption>
+</figure>
+
+And even further along, this series of URLs:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/ntshruis/ntshruis-pay-url.png">
+    <figcaption>URLs corresponding to bank accounts or payment amounts</figcaption>
+</figure>
+
+In both cases, terms like `balance_query_sortflow` and `get_pay_info` suggest that the intent of this malware is not only to steal user login and password information, but to withdraw funds from a target bank or credit account. Note the `amt=1000` parameter passed as part of the GET query string in the `api.unipage.qq.com` URL; this almost certainly represents an attempt to siphon money from an unsuspecting user. 
+
+Next, I observed this potential query string: 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/ntshruis/ntshruis-params.png">
+    <figcaption>Series of unfilled GET request query string parameters</figcaption>
+</figure>
+
+Note the `QQ=` string, along with highly suspicious strings like `PWD=` and `Hacker=`. At the bottom of the image, the function call `getSelfUin` suggests the presence of a function or API call used to get the user’s own ID number. This suggests that, perhaps, attackers are using this function call to complete the GET query strings indicated above. 
+
+I felt that I had a somewhat solid theory in place, but to confirm, I took a closer look at the DLLs imported by `ntshruis2.dll`, specifically the functions imported as part of `wininet`: 
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/ntshruis/ntshruis-dlls.png">
+    <figcaption>wininet DLLs imported by ntshruis.dll</figcaption>
+</figure>
+
+Here we see functions for building and sending HTTP requests, reading files from the Internet, opening URLs, and getting cookies. This again suggests behavior related to spoofing or manipulating user access to the QQ-related websites identified in the strings above. 
+
+### Conclusions
+ 
+Based on the evidence collected here, I can put together a fairly detailed sketch of what this malware is doing:
+
+-	It is likely delivered as a Trojan horse, installed by users who assume it to be something else.
+-	First, it copies itself into an obscure directory: C:\Users\AppData\Local\Temp as `prints.exe`
+-	It drops several malicious files into this folder, then executes a batch file to remove it from its downloaded or originally-installed location.
+-	It sends some initial communication to an unknown IP address, possibly to alert a remote host to a successful installation
+-	It then waits, scanning for a Tencent QQ-related `.ini` file; if found, it scans this file repeatedly. 
+-	At a certain point, it either detects activation of the QQ app, or simply activates itself; in either case, it masquerades as a legitimate error message, asking the user to re-enter their access credentials.
+-	Using this information, it harvests bank account or personal data from QQ-related services, such as Unipay. 
+-	This could be accomplished as a [man-in-the-browser][man-browser-attack] attack, in which legitimate browser requests are intercepted and manipulated before being sent to the intended recipient. In fact, the steps described in the document linked above seem to correspond closely to the observed strings: evidence suggests that the user’s legitimate bank transfers might be surreptitiously modified and re-routed to unintended accounts. Furthermore, the `InternetGetCookie` function loaded from `wininet.dll`, along with the missing `Cookie` string in the observed HTTP header, suggest that the malware is making some attempt to load the user’s Cookie data, possibly as a means of disguising these man-in-the-browser attacks from the user. 
+
+Given the observed data, this characterization of the malware seems plausible – it certainly takes great steps to disguise itself, and appears to interfere with a number of financially-related URLs. This form of attack can be especially pernicious, as, to the user, the targeted websites will appear to behave as expected; it may take some time for the threat to be recognized. 
+
+Using _yara_, however, I was able to write a script to identify these files uniquely, allowing anyone to search for and remove them before they cause further harm. 
+
+### Yara
+
+This rule identifies all of the files dropped by `bad`, including the otherwise benign `qinput.png`; my idea here was that even remnants of a previous infection could be discovered, alerting a user to potential financial fraud. As each of `ntshruis2.dll`, `prints.exe`, and `qinput.png` differ significantly, I found it best to find a unique string (or strings) in each file, focusing on identifying all malware-related files over consolidating  yara rules:
+
+<figure>
+    <img src="/assets/img/week3/blog-entry/blog-yara.png">
+    <figcaption>editing the yara rule created for bad and its associated files</figcaption>
+</figure>
+
+As such, my yara rule for this file was written as follows:
+
+```
+rule qq {
+	strings:
+		// prints.exe
+$p1 = “BT2Att8butes”
+// ntshruis2.dll
+$nt1 = “TJ.asp?A=whileInject-”
+$nt2 = “Hacker=”
+
+// qinput.png
+$q1 = “PNG”
+$q2 = {45 94 36 64 B0 A5 36 3E}
+
+	condition:
+		$p1 or ($nt1 and $nt2) or ($q1 and $q2).
+}
+```
+
+To overcome the fact that `prints.exe` was packed, I chose the most unique, representative string that I could find. This string didn’t generate any hits when searching through `system32`, and will likely be good enough for our purposes considering its odd spelling. To accommodate `ntshruis2.dll`, I used two unique strings in conjunction – it is unlikely that another file will contain the string `Hacker=` and the malicious `TJ.aspA=whileInject-` path connected with the URL address described above. Other options might have included any one of the long QQ-related URLs, but as I could not ascertain the meaning of each query string parameter in these URLs, it seemed poor form to include them – perhaps some of these URLs are entirely benign in nature. This reasoning was contradicted somewhat in the final case; I used a conjunction of the terms `PNG` (found in the header) and a byte string chosen from the middle of the file. This passed the `system32` test, but ideally I would choose a byte string known to be meaningful; perhaps this particular string of bytes isn’t particularly relevant to the image’s content. 
+
+In any case the yara rule correctly identified the malware, and avoided false positives – a success. As part of a professional malware investigation, a researcher might distribute a rule like this, along with a brief analysis, to colleagues and suspected targets. Anti-malware companies such as McAfee might use similarly-styled rules to update their AV engines, allowing for detection – and remediation – of this threat.
+
+Thus, Week 3 is complete. Next week, we begin study of Software Vulnerabilities and Common Exploits. 
+
+
+[active-x]: https://www.zscaler.com/blogs/research/activex-vulnerabilities-threat-web-security
+[LADS]: https://www.aldeid.com/wiki/LADS
+[safer-exp]: https://technet.microsoft.com/en-us/library/bb457006.aspx
+[def-conn]: https://blogs.msdn.microsoft.com/askie/2017/06/20/what-is-defaultconnectionsettings-key/
+[tencent-qq]: https://en.wikipedia.org/wiki/Tencent_QQ
+[online-ocr]: https://www.onlineocr.net/
+[man-browser-attack]: https://www.rsa.com/content/dam/rsa/PDF/Making_Sense_of_Man_in_the_browser_attacks.pdf
+
