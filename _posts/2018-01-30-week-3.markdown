@@ -40,11 +40,11 @@ A challenge with running automated analysis systems such as Cuckoo lies in deter
 
 Mr. Schmugar concluded his lectures by assigning us a challenge: a blog post-style report and analysis of one of a series of four samples provided to us. This analysis is located in the “Blog Post” section, below.
 
-## Labs:
+## Labs
 
 In the first three labs this week, we wrote yara rules for sets of provided malware samples. 
 
-### Yara Lab 1:
+### Yara Lab 1
 
 This lab involved analysis of a directory containing seven samples. Most had been packed with UPX, although using FileInsight I could still make out partial phrases or small strings embedded within the hex dumps. One file (filename 6f29…) contained the string `DivX`, another (filename 6bb0…) contained `kshop`, others included strings like `AIM`; these were all located in similar addresses within the files analyzed. One file, however (filename a4a2…), was not packed: here, I observed that the strings in the other files were in fact bits and pieces of malicious filenames, masquerading as movie titles (Harry Potter makes an appearance), keygens, password crackers, and so forth. There are also filepaths corresponding to registry keys for certain early-2000s peer-to-peer software, such as Kazaa or Morpheus (may they both rest in peace). Among all observed samples, however, the string `Jenna Jam` (part of “Jenna Jameson”) was in cleartext: 
 
@@ -130,7 +130,7 @@ And, hits for each file in the directory containing the samples:
 
 This was a somewhat more complicated exercise than the first lab, and it was interesting to learn more advanced yara syntax. Using byte strings can give rules much greater flexibility and reduce the number of strings necessary to create an effective rule. There are many different ways to write the rule above, however, and Mr. Schmugar used “jumps” instead of this OR syntax in his own work. It became clear that writing an effective yara rule is as much an art as it is a science, and that writing rules for even moderately complex cases requires lots of practice and experience.
 
-### Yara Lab 3:
+### Yara Lab 3
 
 In the final yara lab, I analyzed a significantly more complex group of 22 malware samples. It quickly became clear that a yara rule based on a single string would not be possible here. As in the prior labs, these samples appeared to be connected, but their relationship was less direct here. Most contained references to “tuguu.com”, which is a known adware distributor (or “Internet marketing service”, as they identify themselves) located in Spain. Other common keywords included Spanish-language strings such as `instalarEXE`, `getNomostradas`, and `existeClavePropiaAVG` (in English, `existsKeyForAVG`), supporting the notion that this group of malware likely originates from Tuguu. The function name `existeClavePropiaAVG` is very suspicious, as it suggests that this malware family to some extent searches for existing anti-virus software on the target system. I also found numerous references to DigiSign and GoDaddy; both of these services are used for code signing or credentialing. 
 
@@ -170,7 +170,7 @@ Note that here, I used the “any of them” condition to identify files that co
 
 Following Lab 3, It became clear that, sometimes, a brute force approach is acceptable in a pinch. Ideally, however, one should write rules in which the text or byte string defining each rule is fully understood and documented; I’m not sure what the byte string in `$s3` accomplishes, or if it represents an important component of the malware. A more complete approach might involve de-compiling or or parsing the machine code in these misfit executables to identify more representative commonalities in each file.
 
-## Blog Post:
+## Blog Post
 
 McAfee estimates that there are 300,000,000 unique malicious files in existence, with thousands of new samples being discovered each day. These files range from relatively benign and easily-removable adware to advanced, complex ransomware. Anti-virus software is an excellent defense method, especially when grouped with other measures, but not every malicious file can be captured by even the most advance AV software – the sheer volume of unique files guarantees that, sometimes, an as-yet-unknown malware sample could find its way to your computer. But, what is a user to do? It can be difficult to ascertain a file’s intent – even after running it – without knowing what to look for in the file’s behavior. In this guide, I'll walk through how to use free and open-source analysis software to look for common malware traits, and how to develop a deeper sense of what a particular malware sample might do to your computer. Do you want to do a bit of amateur sleuthing? Worried that you might be an unwilling host for a malicious executable? Read on. 
 
@@ -208,7 +208,7 @@ The fourth and final file (with hash a1874f714f7a15399b9fae968180b303), however,
     <figcaption>Fourth sample: packed binary</figcaption>
 </figure>
 
-### Analysis: 
+### Analysis
 
 I decided to dive a little deeper into this fourth file (with hash a1874f714f7a15399b9fae968180b303) to determine what it does, how it works, and how it persists. 
 
@@ -471,9 +471,9 @@ rule qq {
 }
 ```
 
-To overcome the fact that `prints.exe` was packed, I chose the most unique, representative string that I could find. This string didn’t generate any hits when searching through `system32`, and will likely be good enough for our purposes considering its odd spelling. To accommodate `ntshruis2.dll`, I used two unique strings in conjunction – it is unlikely that another file will contain the string `Hacker=` and the malicious `TJ.aspA=whileInject-` path connected with the URL address described above. Other potential choices included any one of the long QQ-related URLs, but as I could not ascertain the meaning of each query string parameter in these URLs, it seemed poor form to include them – perhaps some of these URLs are entirely benign outside of the context of this malware. This line of reasoning was contradicted somewhat in the final case: I used a conjunction of the terms `PNG` (found in the header) and a byte string of unknown purpose chosen from the middle of the file to identify `qinput.png`. I didn't have many alternatives here, as `qinput` is simply an image containing no distinctive or meaningful strings aside from its filetype. This signature passed the `system32` test, but might not hold up under more rigorous scrutiny - this byte string is not known to be meaningful. Perhaps this particular string of bytes isn’t especially relevant to the image’s content. 
+To overcome the fact that `prints.exe` was packed, I chose the most unique, representative string that I could find. This string didn’t generate any hits when searching through `system32`, and will likely be good enough for our purposes considering its odd spelling. To accommodate `ntshruis2.dll`, I used two unique strings in conjunction – it is unlikely that another file will contain the string `Hacker=` and the malicious `TJ.aspA=whileInject-` path connected with the URL address described above. Other potential choices included any one of the long QQ-related URLs, but as I could not ascertain the meaning of each query string parameter in these URLs, it seemed poor form to include them – perhaps some of these URLs are entirely benign outside of the context of this malware. This line of reasoning was contradicted somewhat in the final case: I used a conjunction of the terms `PNG` (found in the header) and a byte string of unknown purpose chosen from the middle of the file to identify `qinput.png`. I didn't have many alternatives here, as `qinput` is simply an image containing no distinctive or meaningful strings aside from its filetype. This signature passed the `system32` test, but might not hold up under more rigorous scrutiny - the byte string that I chose is not certain to be meaningful.
 
-In any case the yara rule correctly identified the malware, and avoided false positives – a success. As part of a professional malware investigation, a researcher might distribute a rule like this, along with a brief analysis, to colleagues and suspected targets. Anti-malware companies such as McAfee might use similarly-styled rules to update their AV engines, allowing for detection – and remediation – of this threat.
+In any case, my yara rule correctly identified the malware, and avoided false positives – a success. As part of a professional malware investigation, a researcher might distribute a rule like this, along with a brief analysis, to colleagues and suspected targets. Anti-malware companies such as McAfee might use similarly-styled rules to update their AV engines, allowing for detection – and remediation – of this threat.
 
 Thus, Week 3 is complete. Next week, we begin study of Software Vulnerabilities and Common Exploits. 
 
