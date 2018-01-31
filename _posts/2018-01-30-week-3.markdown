@@ -57,6 +57,7 @@ As such, I decided that it was a good candidate for inclusion in my yara rule. T
 
 ```
 rule Sytro {
+
 	strings:
 		$jenna = “Jenna Jam” ascii
 
@@ -98,6 +99,7 @@ To accomplish this, I took the entire CLSID present in each of the files, repres
 
 ```
 rule CVE20082551 {
+
 	strings:
 		//c1b7e532-3ecb-4e9e-bb3a-2951ffe67c61
 		$s1 = { 63 31 62 37 65 35 33 32 ( 25 32 44 | 2D ) 
@@ -153,11 +155,11 @@ Unfortunately, the same string could not be identified in all 22 files; not all 
 
 ```
 rule domai {
+
 	strings:
-		//
-$s1 = “existeClavePropiaAVG”
-$s2 = “tuguu”
-$s3 = {3C 28 3C 44 3C 4C 3C 70 3C 7C 3C}
+		$s1 = “existeClavePropiaAVG”
+		$s2 = “tuguu”
+		$s3 = {3C 28 3C 44 3C 4C 3C 70 3C 7C 3C}
 
 	condition:
 		any of them
@@ -453,17 +455,16 @@ As such, my yara rule for this file was written as follows:
 ```
 rule qq {
 	strings:
+		// prints.exe
+		$p1 = “BT2Att8butes”	
+		
+		// ntshruis2.dll
+		$nt1 = “TJ.asp?A=whileInject-”
+		$nt2 = “Hacker=”
 
-	// prints.exe
-	$p1 = “BT2Att8butes”	
-	
-	// ntshruis2.dll
-	$nt1 = “TJ.asp?A=whileInject-”
-	$nt2 = “Hacker=”
-
-	// qinput.png
-	$q1 = “PNG”
-	$q2 = {45 94 36 64 B0 A5 36 3E}
+		// qinput.png
+		$q1 = “PNG”
+		$q2 = {45 94 36 64 B0 A5 36 3E}
 
 	condition:
 		$p1 or ($nt1 and $nt2) or ($q1 and $q2).
