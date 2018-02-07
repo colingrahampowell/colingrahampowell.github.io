@@ -5,7 +5,7 @@ date:   2018-02-06 17:00:00 -0500
 categories: dada 
 ---
 
-## wn
+## Introduction
 
 To this point in Defense Against the Dark Arts, we’ve focused on malware analysis and malware defense techniques. This week, we shifted gears somewhat, discussing software vulnerabilities and exploits – the means by which many malware attacks are actually propagated. Lectures were delivered by Brad Antoniewicz, a researcher at McAfee’s Foundstone division. Between discussions of concepts, we were given a chance to participate in guided labs, during which the instructor worked through the creation and execution of common exploits; I was able to follow along in my own virtual machine, and in so doing I was able to develop a more intuitive sense of how software exploits are written, how they are loaded onto a target’s computer, and – importantly – how to prevent such exploits in software that I write myself.
 
