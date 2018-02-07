@@ -1,0 +1,237 @@
+---
+layout: post 
+title:  "Week 4"
+date:   2018-02-06 17:00:00 -0500
+categories: dada 
+---
+
+## wn
+
+To this point in Defense Against the Dark Arts, we’ve focused on malware analysis and malware defense techniques. This week, we shifted gears somewhat, discussing software vulnerabilities and exploits – the means by which many malware attacks are actually propagated. Lectures were delivered by Brad Antoniewicz, a researcher at McAfee’s Foundstone division. Between discussions of concepts, we were given a chance to participate in guided labs, during which the instructor worked through the creation and execution of common exploits; I was able to follow along in my own virtual machine, and in so doing I was able to develop a more intuitive sense of how software exploits are written, how they are loaded onto a target’s computer, and – importantly – how to prevent such exploits in software that I write myself.
+
+## Day 1: Lecture
+
+Mr. Antoniewicz began this week’s lectures with an overview of “hacking”, discussing how what was once considered a somewhat benign form of pranking has become very serious business, with very serious consequences – consider the WannaCry attack discussed in weeks prior. Entire military divisions have been created to engage in cyber warfare; these divisions defend against APTs from foreign entities, while engaging in attacks of their own – consider [Stuxnet][stux], widely considered to be a creation of US and Israeli military forces. Generally, however, hacking can be defined as “obtaining program control in a way that was not intended”, typically by finding an unsafe assumption made by a software developer, and exploiting it. In this way, hacking can involve taking advantage of mis-configuration (weak passwords, for instance), and/or poor programming practice. In this week’s lecture, we focus on the latter, which is the more nuanced case. 
+
+Over the past decade or so, there has been a shift in the attack methods used by hackers – in days of yore, hackers often attempt to gain access to a target system through direct methods – searching for ways in via the “DMZ”, or the set of internet-exposed servers (such as websites and SMTP servers) that lie at the edge of an organizational network. As hacking and malware attacks grew in scope and scale, security in these network areas increased dramatically, with firewalls and other security measures severely limiting outside attacks. Now, the focus has shifted: attackers focus on social engineering or phishing efforts in an attempt to goad their targets into executing malicious software themselves. As such, these attacks typically target the user’s browser, somehow manipulating its execution to give the hacker program control or access to information that they should, under normal conditions, not be able to see. 
+
+Mr. Antoniewicz continued with a discussion of WinDBG, our primary analysis tool this week. WinDBG is a debugger with a built-in disassembler, much like Linux’s gdb; using this tool, we can investigate process behavior at the assembly level, which would be necessary for some of the exploits that we’d write later this week. We were introduced to a few common WinDBG commands, such as bp for setting breakpoints, dd for displaying a DWORD in memory, and g for allowing the program to execute (or, “go”). We’d use WinDBG extensively in the week’s labs; this introduction was meant to give us a few essential commands that would be useful in our analysis. 
+
+This was followed by a very brief overview of registers, temporary storage areas for CPU data. I remembered much of the subject matter discussed here from coursework in Computer Architecture and Assembly Language, but it was useful to have a brief refresher. Although the x86 instruction set does not restrict most registers to a particular use, there are common conventions that are typically considered best practice. Among these:
+-	EAX: the “accumulator” register; in Windows, often used to hold a function’s return value. 
+-	ECX: a counter, used for looping and iteration.
+-	EBP: the “base pointer”, that contains the base address of the current stack frame.
+-	ESP: the “stack pointer”, containing the top of the current stack frame. 
+
+In this week’s labs and exercises, we’ll also come across another very important register: EIP, the “instruction pointer”, which stores the address in memory that the CPU is executing from. This is important: if we can somehow manipulate the address stored in EIP, we can cause a program to execute arbitrary code loaded into a known address in memory. This is the crux of most software exploits; in our labs this week, we explored number of different exploit techniques, but each involved getting another program to execute our own code. 
+
+The lecture continued with a discussion of the concept of memory corruption: by manipulating program input, we can access memory in an invalid or unintended way that results in undefined behavior. An exploitation involves taking advantage of this vulnerability to control this undefined behavior; by manipulating code and input data in a particular way, we can cause some condition or state to occur that provides us with information or access that the user did not explicitly allow. Exploits can be considered in two parts: a vulnerability trigger that involves a bug in the target software, and a payload that contains an action that an attacker wishes to perform on a system. Historically, the payload consisted of shellcode - the assembly code necessary to execute a shell on the target’s system, although the payload can be anything the attacker wishes it to be. In our case, the payload would bring up calc.exe, the Windows calculator program. This is the method typically used by researchers as proof of concept, to demonstrate control over the system. 
+
+Our first lab would involve creating and executing a buffer overflow exploitation, in which a user-provided value and a user-provided length are provided to a running process; if we can control the length and the value, we can continue writing past the memory space allocated for that input buffer, into portions of memory where the instruction pointer and stack pointer reside. 
+
+This form of exploit requires knowledge of the system stack, however, and so Mr. Antoniewicz provided a quick refresher on the inner workings of the system stack – specifically, how it responds to function calls, expanding and contracting as variables are added to and removed from it. I was familiar with this concept, from the aforementioned coursework in computer architecture and assembly language, but this refresher was welcome (and, frankly, necessary). 
+
+When a function is called, values are typically placed on the stack as follows:
+-	Function arguments are pushed onto the stack.
+-	The return address of the function – where, in memory, to restart execution – is pushed.
+-	The location of the previous base pointer (EBP) is pushed onto the stack, and the current position of ESP is placed in EBP (mov EBP, ESP). Now, EBP contains the base of the function’s “stack frame”, the series of local variables pushed to the stack as part of that function’s execution
+-	Local variables are pushed onto the stack.
+
+When a function returns, this occurs in reverse:
+-	The base stack pointer, EBP, is moved into ESP to remove local variables from the stack.
+-	The previous location of the base stack pointer is popped from the stack and restored to EBP. 
+-	The return address is popped and placed into EIP.
+-	Any function arguments are cleaned up from the stack (this process is typically part of the return command). 
+
+In Windows, the stack growns downward in memory – from high memory address to lower memory addresses. So, consider this process of setting up the stack frame: if, in pushing local variables, we could somehow write a large value to memory, we could overwrite the return address, other function parameters, and so forth with whatever we pleased. This is the essence of a buffer overflow exploitation: we’re exploiting the fact that we can individually specify the size and content of an input buffer, and “tricking” a program written in this way to write a much larger series of bytes to memory than intended by the program’s original designer.
+
+A stack overflow exploit typically occurs in 4 major steps:
+1.	Crash Triage: load the program with known overflow data, and observe its behavior when it crashes (as a result of said data overflowing onto the stack). Try to determine what we control: look at the registers, determine whether the values in memory causing the overflow have been allocated on the stack or the heap, and determine if we have control over the stack frame itself.
+
+2.	Determine the offset of the return address, and make sure that it can be overwritten by data in the overflowed buffer. Chiefly, we’re concerned with how many bytes exist between the buffer and the return address – we need to know where to position the values that we want to be loaded into EIP and executed when popped from the stack. In this class, we used a WinDBG module called byakugan, along with the Metasploit “msfPatternString”, a string of known, unique patterns. If we overflow the buffer with this pattern string, byakugan will look through the registers and tell us the exact offset at which the return address is located. 
+
+3.	Next, we position our shellcode: here, our goal is to position the shellcode just beyond the return address; we want ESP to be pointing at the start of our shellcode when the return address (and, possibly, any local variables) is popped from the stack. This is important, as positioning its start at ESP gives us a point of reference – it is difficult to determine the exact address of values on the stack before runtime, so we cannot simply hard-code the address of our shellcode; we need some way to “trick” the running process into finding it for us. 
+
+4.	Now that we have our shellcode loaded where ESP will point after the function returns, we need to find a way to execute it – specifically, we need to figure out what to put into EIP to force our shellcode to begin execution. This conundrum is solved through a method known as “trampolining” – we simply look through memory for the sequence “0xFFE4”, the byte code corresponding to JMP ESP, and place the address of this byte sequence into the portion of the stack corresponding to the function’s return address. When this value is popped off of the stack, the program begins execution at the memory address containing OxFFE4, which in turn causes it to immediately jump to the address stored in ESP, which contains the shellcode, which begins executing. Voila – we now have program control. 
+
+Browser exploits are typically written in JavaScript, which is directly executed in the browser to manipulate the system stack. Buffer overflows are achieved simply by manipulating strings, including encoded memory addresses and offsets within the string itself. When the content of the string is pushed onto the stack, these memory addresses will be placed into the appropriate spaces. In writing exploits with JavaScript, however, it’s important to remember that each character in a JavaScript string is two bytes long, corresponding to its Unicode encoding. To write specific hexadecimal-based memory addresses to the string, we use the \u escape sequence to fill the string with specific hexadecimal values. This escape sequence fetches the Unicode character having the specified hex value, although in our case we’ll use it to specify exactly what our overflow string should contain.
+
+## Lab 1
+
+This lab was intended to help us develop familiarity with WinDBG. I followed along with Mr. Antoniewicz.
+
+First we attached WinDBG to the Internet Explorer process running the FSExploitMe page – which contained a pre-written ActiveX exploit. Then, we set a breakpoint at address `54431df0h` (with `bp` 54431df0), continuing program execution with `g`. Once the breakpoint was reached, we could see the address at which `FSExploitMe.ocx` was loaded, `54430000h`. The stack size was determined by running `!teb` to get thread execution block data, and subtracting the address of the stack limit from the stack base; for me, these values were `22e00000h` and `22c7000h`, respectively:
+
+<figure>
+    <img src="/assets/img/week4/lab1-2/stacksize-2.png">
+    <figcaption>Determining total stack size</figcaption>
+</figure>
+
+ Mr Antoniewicz pointed out that this is, in fact, a different stack from that present at the beginning of program execution (i.e., before the breakpoint). This is because of the way that Internet Explorer allocates threads; this code is in fact running in a separate thread, with its own local stack. 
+
+We continued by exploring the starting address of the Process Heap using the `!peb` command: inspecting the output, we saw that the process heap started at address `00420000h`. Next, we inspected the value in EIP: `54431df0`; this is, not coincidentally, the address of our breakpoint. Moving through the lab, we used the command `u eip L10` to unassemble the values in memory 10 lines past EIP; from here, we could see the `sub esp 14h` command, corresponding to a stack space of `14h` for local variables. We then executed 5 instructions with `t 5`, inspecting the string value at the top of the stack: this was accomplished using the `du poi(esp)` command, getting the Unicode value pointed to by ESP: the string `FluffyBunniesDontFlapOrQuack` appeared:
+
+<figure>
+    <img src="/assets/img/week4/lab1-2/fluffy-bunnies-string.png">
+    <figcaption>FluffyBunnies... string found at address pointed to by ESP</figcaption>
+</figure>
+
+Continuing with the lab, we executed 11 instructions with `p b` (here, b is base-16); here, the instruction at EIP was the assembly-language command `cmp dword ptr [ebp-4], 0Ah`. We can guess that this is a loop, running for 10 iterations - `cmp` compares the value at address `ebp-4`to `0Ah`, or 10 base-10.  
+
+Next, we executed all instruction up to the functions’s return, using the `pt` command in WinDBG. The resulting decimal value was `31337` (base-10), found in `eax`: running the `!formats` command in WinDBG converted this to decimal from the hexadecimal value `00007a69`. Finally, we checked the value pointed to by esi, using `!address esi` to produce the following result: 
+
+<figure>
+    <img src="/assets/img/week4/lab1-2/addr-esi.png">
+    <figcaption>Value pointed to by esi - on the stack</figcaption>
+</figure>
+
+By inspection, we can see that the value pointed to by esi is on the stack.
+
+## Lab 2
+
+In this lab, we got to overflow the buffer and execute `calc.exe` - a triumphant moment. Using a separate JavaScript file, `Lesson2.js`, that was loaded into the browser, we manipulated the `L2Exercise1() ` function contained within it to overflow the buffer, position our shellcode, and execute `calc.exe`. First, we modified the function to pass the Metasploit msfPatternString to the `FSExploitMe.StackBuffer()` function. 
+
+<figure>
+    <img src="/assets/img/week4/lab1-2/msfpatternstring.png">
+    <figcaption>passing msfPatternString with L2Exercise1()</figcaption>
+</figure>
+
+From here, we triggered the vulnerability, then, upon program crash, used byakugan determine the offset at which EIP was overwritten. This was accomplished by calling !load byakugan` in WinDBG, then calling `pattern_offset 2000`. This produced the following information:
+
+<figure>
+    <img src="/assets/img/week4/lab1-2/load-byakugan.png">
+    <figcaption>byakugan output</figcaption>
+</figure>
+
+So, we know that we have control over ebp and eip at offsets 1024 and 1028 from the start of our string, respectively. 
+
+Now, we can find the address of a `jmp esp` instruction somewhere in memory, and place that at the end of our string, s. To find this address, we look for the starting and ending address of  `FSExploitMe` with `lmf m FS*`, then use these address in `s`, searching  for the bytes `ff34` somewhere in that function. These were located at memory address `54432437`. 
+
+<figure>
+    <img src="/assets/img/week4/lab1-2/jmp-esp.png">
+    <figcaption>JMP ESP found</figcaption>
+</figure>
+
+Using this information, we can place `\u2437\u5443` (matching the endianness of the system) at the end of a 1024-byte string to cause EIP to execute `jmp esp`, and load the shellcode at ESP. One issue, however: the instruction at address `54432159` is not simply `ret`, it is a `ret 4`, which pops from the stack into EIP and removes 4 bytes from the stack to clean up any parameters passed to it. This means that we’ll need to include 4 bytes of “filler” between the address of `jmp esp` and the start of our shellcode, to make sure that ESP is pointing to the start of the shellcode when the `jmp esp` instruction is read. Overall, then, our `L2Exercise1()` function will look like this:
+
+Note that we set our string size to 1028 / 2: we divide by two to get a string of exactly 1028 bytes; 1028 bytes are necessary so that concatenating the address of `jmp esp` will place the instruction at an offset of exactly 1028. The sequence `u4242\u4242` is the filler to cover the space popped off of the stack with `ret 4`.
+
+<figure>
+    <img src="/assets/img/week4/lab1-2/l2exercise1.png">
+    <figcaption>Modified L2Exercise1()</figcaption>
+</figure>
+
+After doing this, we trigger the vulnerability again, and voila:
+
+<figure>
+    <img src="/assets/img/week4/lab1-2/calc.png">
+    <figcaption>A wild calc.exe appears</figcaption>
+</figure>
+
+
+`calc.exe` has been loaded. 
+
+## Fly Birdie
+
+Next, the training wheels were removed, and we were on our own:
+
+
+## Day 2
+
+Whereas Day 1 focused on Stack-based exploits, Day 2 focused on Heap-based exploits, which are somewhat more complex; heap-allocated memory is more fluid and unpredictable than stack-based memory, and so we must employ a few special techniques to take advantage of exploits that use heap-allocated memory. 
+
+In our case, we’ll be exploiting “use after free” exploits, in which memory is allocated on the heap, freed, then used again. This is a somewhat common programmer mistake; this sort of bug might not trigger an error, and a program (such as an ActiveX control) with this issue could continue to function as expected without issue. Using a C++ style language, a use-after-free might occur as follows:
+
+```
+Class *i = new myClass;
+Class *j = i;
+delete i;
+j->func();	// use after free
+```
+
+This is a common mistake (one that I have made plenty of times!). In this case, there is nothing between `delete i` and `j->func()`, so we couldn't actually _exploit_ this code, but using JavaScript (again) in a browser environment, we can allocate and deallocate memory on demand, allowing us greater flexibility in creating and positioning our exploits. This was explored in greater detail in the final lab this week.
+
+To exploit a use-after-free vulnerability, an exploit typically generally takes the following steps:
+1. Free the object.
+2. Replace the object with our own.
+	1. Figure out the size of the freed object (by breaking on the `HeapFree()` function).
+	2. Make allocations of the same size.
+3. Position our shellcode.
+4. Use the object again.
+
+To understand how to replace a freed object with one of our own and position our shellcode in the right place, we need to know a bit about how Windows allocates memory on the heap. There are "layers" of system calls used to allocate memory, and the specific layer reached is based on the size of the memory requested. For allocations less than 16kB, the "front-end allocator" is used; for allocations between 16kB and 512kB, the "back-end allocator" is used, and for larger allocations, the lower-level function VirtualAlloc() is called directly. In allocating memory, these system calls cascade until one is found to work. 
+
+The front-end allocator is associated with the "low fragmentation heap" (LFH), which has a peculiar quality: if the allocator sees that it has a number of requests for a specific size, it will create "buckets" for a specific request of that size and activate the low-fragmentation heap. Importantly, there is no "coalescing" at this level - memory does not reorganize itself to fill gaps in a low-fragmentation heap. The magic number of allocations enabling the low-fragmentation heap is 18; we can thus enable the LFH within the browser, using JavaScript: create a variable or HTML element that causes a small memory allocation, and repeat 18 times. Therefore, to replace another allocated object with ours, we can trigger the low-fragmentation heap by making a repeated small allocation, create the object, free it, then make a set of allocations of exactly the same size - because the low fragmentation heap has been enabled, there is no memory coalescing, and so the "slot" left behind by the freed memory will be filled by our new object. 
+
+As will be discussed in more detail below, the specific heap address of a certain string or variable is very difficult to determine; there are a lot of variables in play. However, we can again exploit the Windows memory allocation functions to force the system into a state where memory address are more predictable. Very large heap allocations are passed directly to virtualAlloc(), which assigns them in 64kB chunks; if we simply attempt a long series of large heap allocations, we can "normalize" memory addresses: before these large allocations, there were many small spots in memory that could be filled with a smaller memory allocation. _After_ these allocations, all of the small spots are filled, and the starting addresses of each 64kB memory allocation begins to normalize to a particular offset. This is part of a technique called "Heap Spraying", which was used in Lab 3 to, again, position our shellcode and execute `calc.exe`- see below.
+
+It's important to remember that the overall goal is the same as with the stack overflow-based exploit: we want to get our shellcode into a predictable location so that we can replace the return address in a function call with the address of the shellcode itself. The difference here is that heap-based exploits must use a slightly more roundabout technique to accomplish this.
+
+## Lab 3
+
+Here, we exploited a user-after-free vulnerability. I followed along with Mr. Antoniewicz for the first portion of the lab, then completed the rest on my own. 
+
+We started by enabling the page heap, which is used in debugging to give more predictable behavior to the heap. This was accomplished with a command-line instruction. Next, we opened up WinDBG, attached it to Internet Explorer, and triggered our use-after-free vulnerability. We see that the program crashes at memory address `5443247ah`, which is contained in EAX:
+
+<figure>
+    <img src="/assets/img/week4/lab3/initial-crash.png">
+    <figcaption>Initial program crash</figcaption>
+</figure>
+
+Observing the disassembly at this address, I noted the structure of the assembly-language commands at the point at which the program crashed:
+
+<figure>
+    <img src="/assets/img/week4/lab3/lab3-function-error.png">
+    <figcaption>Assembly-language commands at program crash</figcaption>
+</figure>
+
+So, when the program crashes, it moves the value at address EBP + 8 into EAX, moves the value at the address in EAX into EDX, then moves the value at the address in EDX back into EAX, then performs `call eax` to load a function at the memory address in EAX. There was a lot of memory de-referencing and manipulation here, but our goal was in view: we needed to find a way to "fool" Internet Explorer into reaching `call eax`, simultaneously placing our shellcode at the address that would eventually be contained in EAX at the time of the function call.
+
+Next, we used the `!heap -p -a eax` command to get information about the heap allocation at this address, specifically, a stack trace that will prove useful:
+
+<figure>
+    <img src="/assets/img/week4/lab3/freed-heap.png">
+    <figcaption>Address of delete() command</figcaption>
+</figure>
+
+Note the address of the delete operator in the stack trace: `544324d6`. Using the disassembler to check this memory address, we noted that the call to `HeapFree()` is located at memory address `544324d0`. 
+
+<figure>
+    <img src="/assets/img/week4/lab3/found-heap-free.png">
+    <figcaption>Address of HeapFree()</figcaption>
+</figure>
+
+
+We couldn't determine much about the size of the memory originally allocated here (as it was already freed by this point), so we needed to break on HeapFree() - restarting our browser, attaching WinDBG, and setting a breakpoint just before the memory is freed with `bp 544324d0`.  
+
+Now, we knew that HeapFree() takes three parameters, with the last of its parameters being the first pushed onto the stack. To get the address of the memory itself, we called `!heap -p -a poi(esp + 8)` - the DWORD parameter first pushed to the stack will start 8 bytes from the current position of the stack pointer just before `HeapFree()` is called. This produced the information we were looking for: the size of the allocated block of memory subject to the use-after-free vulnerability - 74 bytes:
+
+<figure>
+    <img src="/assets/img/week4/lab3/heap-size.png">
+    <figcaption>Size of heap in use-after-free condition</figcaption>
+</figure>
+
+At this point, we needed to make allocations of the same size to fill the space left over by the freed memory. To do this, we first disabled the page heap, removing the debugging state; from here, we triggered the LFH by creating an HTML `<param>` element, and assigning it a `name` equivalent to a string of exactly 74 bytes. This was repeated 20 times, exceeding the "magic number" of 18 allocation requests. 100 new `<param>` elements were then placed into an array; placing them into an array here did not trigger a memory allocation, as their `name` attribute had not been assigned. 
+
+From here, the object that was initially allocated was freed, and the garbage collector was run to make sure that the memory block had been placed on the free list. A name was next assigned to each `<param>` in the array of `<param>` elements, triggering 100 memory allocations for the same 74-byte string; this ensured that a copy of this string would be placed in the memory address that had previously been freed. 
+
+For the moment, the string was simply filled with 74 bytes of `\u4141` - re-running the use-after-free condition, we noticed that, now, the value in the freed object had been replaced with a series of `\414141...` digits - we had correctly replaced the object in the heap.
+
+Next, we needed to get the address of our shellcode into the first DWORD of the replaced object. To do this, we used the Heap Spray technique described above: making repeated large memory allocations that contained our shellcode. Mr. Antoniewicz showed us a tool named VMMap that provided a visual representation of heap memory allocations - after the heap spray, we could see that the size of the heap ballooned, _and_ that the memory addresses in the heap started to normalize. Using WinDBG, he demonstrated how to find the normalized memory addresses in the heap; `!heap --stat` shows all heap allocations, top-to-bottom. We could see that a large percentage of heap allocations were of exactly 1 MB (`0xfffc0`). Using `!heap -flt s fffc0` allowed us to search for all allocations of that size; here we observed repeated patterns in the addresses. Mr. Antoniewicz noted that we needed to account for headers used in heap allocations, and that our shellcode would need to start at a 36 byte offset from the start of the heap allocation itself. We identified an appropriate starting point at `0a0a0024h`. 
+
+With this information, we could finally complete the complex series of memory de-referencing in the assembly-language instructions causing the use-after-free crash. In our 74-byte string, we replaced the first four bytes with `\u0024u0a0a`, again reversing the order of the memory address. This ensured that the `mov edx, dword ptr[eax]` instruction would load the beginning of our shellcode-laden memory allocation; we then added a `HeapSpray()` function to our JavaScript code, called just before invoking the use-after-free error. As an argument, we passed `\u0028\u0a0a` concatenated with our shellcode (represented as a variable named `shellcode`). This was confusing at first - why `\u0028\u0a0a`? Noting again the reversed address order, I returned to the assembly-language instructions: piecing together the series of events that led up this point, I noticed that, when the freed block is used again, its address will be moved into EAX with `mov eax, dword ptr [ebp + 8]`. Next, the value at EAX (the address of our shellcode section, or `0x0a0024h`) will be moved into EDX. _Next_, we see `mov eax, dword ptr [edx]`, just before `call eax`: this will move the value at `0a0a0024h` into EAX, or `0a0a0028h`. So, when `call eax` is executed, the instruction pointer, EIP, will contain the address of the actual beginning of our shellcode. The `0a0a0028h` address is necessary to perform the last memory derefence, and load the shellcode into EAX. 
+
+And, again, `calc.exe`:
+
+<figure>
+    <img src="/assets/img/week4/lab3/calc.png">
+    <figcaption>A wild calc.exe appears, again</figcaption>
+</figure>
+
+This lab felt like a puzzle; I like puzzles, so I really enjoyed getting to the bottom of this exploit. It was fun to delve into my okd x86 Assembly Language textbooks, too. Lab 3 definitely felt more nuanced and difficult than the first two labs, although it was rewarding to finally make `calc.exe` run. 
+
+That's it for this week. Next week, we look into Windows Internals.
+
+
+[stux]: https://www.washingtonpost.com/world/national-security/stuxnet-was-work-of-us-and-israeli-experts-officials-say/2012/06/01/gJQAlnEy6U_story.html?utm_term=.290c24224ab7
+
