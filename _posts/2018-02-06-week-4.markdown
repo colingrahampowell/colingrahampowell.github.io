@@ -133,7 +133,31 @@ After doing this, we trigger the vulnerability again, and voila:
 
 ## Fly Birdie
 
-Next, the training wheels were removed, and we were on our own:
+Next, the training wheels were removed, and we were on our own. I was intimidated by this assignment - we were given a single JavaScript file, and few instructions. I was committed to giving the lab a try, however. I couldn't find IDA on our Virtual Machine, so I began by opening up WinDBG and running the exploit to try and determine its behavior as it ran. On attaching WinDBG and running the exploit, there was no effect. Investigating the JavaScript file associated with this lab, I decided to take a closer look at the disassembly in WinDBG to try and find the "Stacker" function referenced in `L2Exercise2()`. 
+
+Unfortunately, I had a difficult time finding the start of the "Stacker" function called in `L2Exercise2()`; the WinDBG disassembler was difficult to use. Using a tip from a fellow class member on the Piazza page, I searched around memory address `5443232e`, and found the following:
+
+
+<figure>
+    <img src="/assets/img/week4/flybirdie/stacker.png">
+    <figcaption>Stacker disassembly</figcaption>
+</figure>
+
+It looked pretty complicated; I could see the stack frame being set up, but was having a hard time making sense of the disassembly itself. Further investigation was merited. I backed the breakpoint up to the start of the function, and re-started the exploit code:
+
+<figure>
+    <img src="/assets/img/week4/flybirdie/regs-at-brkpt.png">
+    <figcaption>Registers at Breakpoint</figcaption>
+</figure>
+
+I stepped through the code, and noticed the first comparison: `dword ptr [ecx], 50F4F50h`; here, ECX contained the value at `[ebp-4]`. So, I returned to Lesson2.js, creating a string with `var s = u4f45\u504f;`, and passing it to Stacker. As a result, I the following string was displayed: 
+
+<figure>
+    <img src="/assets/img/week4/flybirdie/becky.png">
+    <figcaption>It is so. big.</figcaption>
+</figure>
+
+Unfortunately, I wasn't able to pursue this lab further beyond this point, as I ran out of time and wanted to focus on the other labs this week - namely, the Day 2 material. It was interesting to see a non-trivial exploit, and to take some time manipulating the assembly-level instructions. I've never associated JavaScript with low-level assembly language before, and was somewhat illuminating to see how the two interacted.
 
 
 ## Day 2
