@@ -85,7 +85,7 @@ Next, we executed all instruction up to the functions’s return, using the `pt`
     <figcaption>Value pointed to by esi - on the stack</figcaption>
 </figure>
 
-By inspection, we can see that the value pointed to by esi is on the stack.
+By inspection, we could see that the value pointed to by esi is on the stack.
 
 ## Lab 2
 
