@@ -27,7 +27,7 @@ I started my own analysis with Cuckoo, renaming the malware to `bad`, placing it
 
 <figure>
     <img src="/assets/img/week5/agony_lab/part1/file-create.png">
-    <figcaption>Creation of ntres.dll and sortdefault.nls</figcaption>
+    <figcaption>Creation of tzres.dll and sortdefault.nls</figcaption>
 </figure>
 
 Looking further through the logs, however, I noticed that the `bad` process also created two files that hadn't been captured by Cuckoo: `sparams.txt` and `r-k.exe`:
@@ -235,6 +235,15 @@ From here, Mr. Kapoor discussed a specific bootkit named _StealthMBR_. This malw
 Next, it hijacks the IRP Dispatch table, such that read requests to Sector 0 of the disk (by an AV process, for instance) are instead redirected to the original, pre-infection MBR at Sector 62. It also includes a watcher thread that monitors for modifications to this table, patching it back if it detects a fix. These redirection and "filtering" techniques are very reminiscent of the techniques employed by the _Agony_ malware observed in the Day 1 labs - although _StealthMBR_ is markedly more complex.
 
 Mr. Kapoor intended to conclude this lecture with a lab exploring the TDSS malware, which inserts itself into the "device stack" of the disk, a chain of drivers that are serving it. By investigating with WinDbg, we'd be able to see the original and the modified MBR, as the modified driver object injected itself into the device stack. Unfortunately, the malware didn't present as Mr. Kapoor had expected, and so the lab was abandoned. 
+
+Before abandoning the lab, however, Mr. Kapoor did demonstrate the use of the Sector Editor software to view and edit sectors - the following image demonstrates a byte-level view of Sector 0 of our VM's disk:
+
+<figure>
+    <img src="/assets/img/week5/sector0.png">
+    <figcaption>Sector 0 of our VM's disk</figcaption>
+</figure>
+
+Here, we see the content of the Master Boot Record, along with partition information. The MBR always terminates with (hex-encoded) bytes `55 AA`. Using gdb, we could actually step through the instructions in the MBR; although we weren't able to do that here, it's certainly an interesting exercise to try in the future. 
 
 Looking into [TDSS][alureon] myself, I found that it is also known as Alureon, and is somewhat notorious malware used to steal user bank account information, among other things. It is able to use the print spooling service, `spoolsv.exe`, to modify the MBR and run a custom bootstrap routine, as described above. Upon system boot, the malware blocks access to Task Manager, AV software, the desktop, and Windows Update, and listens for network traffic containing personal user information. As reported by Wikipedia, it evolved to a point at which it was able to bypass the driver signing required as part of the Secure Boot process. 
 
