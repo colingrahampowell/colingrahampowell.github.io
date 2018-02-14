@@ -1,0 +1,268 @@
+---
+layout: post 
+title:  "Week 5"
+date:   2018-02-13 17:00:00 -0500
+categories: dada 
+---
+
+## Introduction
+
+This week, we went as deep as we're going in Defense Against the Dark Arts, delving into the arcane magic of Windows kernel internals. This week's lecturer was Aditya Kapoor of Intel Security, who connected low-level Windows operating system concepts with typical behavior of rootkits and bootkits, _stealth malware_ that operate deep within a target machine, manipulating the kernel or master boot record to avoid detection. Learning about rootkit behavior is an excellent way to learn about the means by which operating systems handle processes, threads, and system calls; knowledge of these concepts affirms knowledge of stealth malware, and vice versa. Mr. Kapoor covered a _ton_ of ground this week, but the material was illuminating and fun. 
+
+## Day 1: Stealth Basics
+
+The intent of the first day's lecture was to understand the concepts of malware "stealth" by means of memory manipulation. First, however, we needed to develop a working knowledge of the distinction between User mode memory, Kernel memory, as well as a conceptual understanding of the concept of _hooking_. To this point, our exploration of malware mostly involved exploration of user-level memory. Once an attack enters the kernel, however,it becomes much more difficult to detect; the kernel memory model is flat, with no security separation. This means that any kernel driver can access any part of memory, manipulating portions of the kernel that fundamentally change the target machine's behavior. 
+
+Prime targets for stealth-based malware include the [System Service Descriptor Table][ssdt] (or SSDT), a dispatch table used in Windows to connect specific kernel-level calls with addresses in memory. When a system call is made from User space, this table is used to index that call with its particular location in memory. By modifying the SSDT, an attacking process (that is, a rootkit) can intercept specific function calls before they are received by the proper kernel-level function or API, funneling them through their own drivers or malware. This process is called _hooking_ and it is at the heart of the _Agony_ malware that we explored later in today's session. 
+
+As a component of stealth, a rootkit will take measures to appear invisible to the user - as such, an intercepted function call will eventually be redirected to its proper destination once the interceptor has modified the information in the manner that it wishes. To the user, it will often appear as if nothing has changed. For instance: a rootkit could intercept calls to `NtQueryDirectoryFile`, editing itself out of any queries that might reveal it - thus, it remains invisible to User space. In essence, it acts as a filter, selectively hiding or manipulating information presented to user-space. This is especially pernicious in that the system calls _themselves_ cannot be relied upon; a user cannot trust the basic file-system information that their operating system is providing. 
+
+### Agony Lab, Part I
+
+To demonstrate this level of deception, we investigated behavior of a rootkit named _Agony_. 
+
+At first, we used tools that we had become familiar with in the first four weeks of the class to perform a typical static or dynamic analysis: Cuckoo, McAfee's _FileInsight_ software, Process Monitor, and so forth. From here, we would use a few new tools and software packages to look beyond user space into the kernel to reveal the full scope of the sample's behavior.
+
+I started my own analysis with Cuckoo, renaming the malware to `bad`, placing it on my desktop, and running it through Cuckoo using the Pythong script provided for us. Fro, here, I dived into the contents of the `C:\cuckoo` directory into which Cuckoo placed copies of each of the binary files created, along with logs of each associated process's behavior. I noticed that the sample appeared to create two additional files, named `tzres.dll` and `sortdefault.nls`, placing them in directories stemming from C:\Windows. Inspecting the log dumped by Cuckoo confirmed this: 
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/part1/file-create.png">
+    <figcaption>Creation of ntres.dll and sortdefault.nls</figcaption>
+</figure>
+
+Looking further through the logs, however, I noticed that the `bad` process also created two files that hadn't been captured by Cuckoo: `sparams.txt` and `r-k.exe`:
+
+From here are a series of system calls: NtOpenFile, NtQueryInformationFile, NtAllocateVirtualMemory, NtReadFile, NtFreeVirtualMemory, and NtClose, all targeting . This pattern of system calls repeats itself quite a few times. Finally, I noted that `bad` executes a command-line instruction through `cmd.exe`: 
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/part1/cmd-line.png">
+    <figcaption>Command-line instruction - note the appearance of wininit.sys</figcaption>
+</figure>
+
+This appears to be executing `f-k.exe`, passing a few command-line flags (-v, -f) and invoking WindowsUpdateService; I'm not certain what this is doing, but here, too, another file appears: `wininit.sys`. A quick Internet search does not show this to be a legitimate Windows file, and so it is likely part of the attack as well. Again, however, it does not appear to have been captured by Cuckoo.
+
+Further observing the sample's behavior, I noticed that it queries and opens a lot of Registry keys pertaining to Internet Explorer or browser settings; it also appears to make itself an authorized application in the host's Firewall policy:
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/part1/set-registry.png">
+    <figcaption>Sample setting firewall policy, authorizing itself</figcaption>
+</figure>
+
+I noticed that the sample loads a lot of socket and Internet-related functions - it is obvious that network connectivity is an element of this software. Next, it appears to download files from odd (and very suspicious) URLs, saving them with the extension `.ren`. Interestingly, the first URL in this sequence corresponds to Microsoft's update service; recalling the command-line instruction noted above. Perhaps this sample depends on a specific version of a particular DLL to operate properly.
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/part1/download-files.png">
+    <figcaption>Downloading files, saving as ".ren"</figcaption>
+</figure>
+
+Investigating `tzres.dll` and `sortdefault.nls` in FileInsight did not reveal much additional information - `tzres.dll` is a PE file (as would be expected), although it appears to primarily contain information about time zones - the name appears to correspond to "time zone resources". `sortdefault.nls` appears to contain a series of language or font-related strings such as `sr-Latn-RS`, or `tzm-Latn-DZ`. 
+
+It's obvious that something malicious is happening here, but what? In the next portion of the lab, we'd dig deeper, using a series of tools to investigate the kernel memory itself.
+
+### Agony Lab, Part II
+
+Mr. Kapoor continued his lecture with an introduction to the Tuluka software and a discussion of the SSDT. Tuluka is a malware (really, a file-system) analysis tool that includes a few enhancements that make it suitable for finding and mitigating the effect of rootkits. In our case, we used it to investigate the contents of the SSDT, looking for "hooked" processes. Tuluka monitors the content of the SSDT, and will flag table pointers to locations outside of kernel memory as suspicious. Tuluka allowed us to quickly discover that the _Agony_ sample had modified the SSDT for three system calls: NtQueryDirectoryFile, NtEnumerateValueKey, and NtQuerySystemInformation:
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/part2/tuluka.png">
+    <figcaption>Modifications to SSDT</figcaption>
+</figure>
+
+What does this mean? Well, if these functions are hooked by a malicious actor, user-space calls to, say, enumerate the content of a particular directory will all be _first_ routed through the malicious function, and filtered - in this case, almost certainly filtered to remove `C;\wininit.sys` from view for the user. It is likely that modifying NtEnumerateValueKey and NtQuerySystemInformation have the same intent - filtering any traces of `wininit.sys`-related activity from user-level functions. Importantly, AV software that uses the same calls to search through a file-system will also not be able to detect the rootkit's presence. 
+
+Tuluka allows us to automatically "patch" the SSDT to restore system calls to their intended memory addresses. Later in Day 1, we would learn to do this manually by changing kernel memory, one byte at a time.
+
+In the mean time, Mr. Kapoor demonstrated LiveKD, a command-line tool that can be used to explore kernel memory. Using this tool, we could see disassembled assembly-language code corresponding to `NtEnumerateValueKey`, as well as the `wininit.sys`-related function that took its place in the SSDT:
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/part2/livekd-replaced-func.png">
+    <figcaption>wininit.sys disassembly</figcaption>
+</figure>
+
+
+ We could also enumerate the contents of the SSDT itself: using the command `dps nt!KiServiceTable L 191`, we were presented a three-columned list, consisting of the memory address of the table entry itself, the address of a system call, and the name of that call. Scrolling through the list, we could see that `wininit` had taken up residence: 
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/part2/kiservtable-wininit.png">
+    <figcaption>wininit modifications to SSDT</figcaption>
+</figure>
+
+In this case, its position between NtQueryDefaultUILanguage and NtQueryDirectoryObject suggested that this was likely the modified entry corresponding to NtQueryDirectoryFile.
+
+### Threads and Processes
+
+Moving on for now, Mr. Kapoor continued with an overview of thread basics. I had some exposure to threads in operating systems and parallel programming coursework, although a refresher here was quite welcome. 
+
+A thread is the smallest unit of execution in an operating system. Most non-trivial applications consist of a number of threads, each running as part of a single process. Threads have their own stack, but typically share process memory amongst themselves - it is possible for a thread to modify the stack of another, for instance. In an operating system, there can be any number of threads demanding system resources at the same time - depending on the physical number of cores available, CPUs can only handle a small subset of these threads simultaneously; the rest are placed in a _Thread Scheduler_, which assigns time slices to each thread in a round-robin fashion. The notion of priority was discussed, as well - in Windows, the CreateThread() process can assign priority to a thread, which allows it to be executed sooner - in essence, it "breaks in line", jumping ahead of other threads in the scheduler. 
+
+Most user-space programs - especially those that contain some form of GUI - are multi-threaded; a Word user, for instance, cannot be forced to wait for a "Print" thread to finish before continuing to type. A single-threaded processor, however, can only "service" one thread at a time, leading to noticeable slowdown in moderately complex applications. To address this, modern CPUs are typically equipped with multiple cores - two and four cores are common industry standards. Independent threads can be scheduled on any available core, significantly increasing the CPU's throughput. Another enhancement, _hyperthreading_, was developed by Intel as a sort of intermediate step between purely single-core CPUs and CPUs containing multiple independently-operating cores. In an hyperthreaded CPU, there are two (or more) instruction pipelines serving a single core. The CPU can intelligently switch between these pipelines without loading a thread's content from memory, trimming a bit of execution time that might otherwise be necessary. 
+
+In Windows, a Thread Object defines a thread. It is one of many Kernel Objects, data structures defined by the Operating System to describe various OS constructs. The Thread Execution Block (TEB), Context (all register values), Priority, and so forth are all defined within this object. 
+
+As noted above, each thread has its own stack, but interestingly, thread stack data is copied to a new memory location when control is transferred between user space and kernel space - threads are not shared between these spaces. This occurs for [security reasons][stack-overflow-threads]; the kernel should not have to inherently trust data originating in user-space. 
+
+We next discussed process memory; an executable process consists of one or more threads (that is, a process needs at least one thread to execute). In Windows, processes are also implemented as objects, similar to threads. A process also includes an _object table_, containing handles to other objects known to that process - files, threads, registry keys, and so forth. 
+
+Mr. Kapoor continued with a demonstration of _Process Hacker_, a tool that can be used to inspect process memory. Here, we could see the pages associated with a given process and actors or modules associated with that process, including DLLs. For each page, _Process Hacker_ lists its read/write/execute privileges; inspecting this field can give us a clue if a malicious DLL has been injected into the process. 
+
+To illustrate this concept, we ran a malware sample named _ZBot_, which intercepts keystrokes and sends them to a remote server. After activating the sample, we opened Notepad, then opened _Process Hacker_ to inspect the memory locations associated with notepad.exe: here, we could see a private page, with no name, that had been given read, write, and execute privileges:
+
+<figure>
+    <img src="/assets/img/week5/proc-hacker-inject.png">
+    <figcaption>DLL injected into process</figcaption>
+</figure>
+
+This is an example of _process injection_, in which an external application (malware, in this case) sees a process being spawned, and injects code externally. In this case, the lack of a name along with the level of privilege suggests something malicious, but often injected DLLs take greater care in hiding themselves, assuming fake, "official-sounding" names. 
+
+From here, we expanded on the earlier discussion of _hooking_, describing how malware can replace the first bytes of a system call with a JMP instruction redirecting to a malicious function located outside of kernel memory - in class, Mr. Kapoor used FindNextFile() as an example, showing how hooking might be used to intercept and filter system calls used to enumerate files and folders. The hooking process typically stores the overwritten instruction and the state of the instruction pointer, returning to the proper system call after it has filtered or otherwise modified the data to pass to that call. In this way, the user is not immediately aware of any suspicious activity. 
+
+This is but one method that stealth malware can use to embed itself in a target machine. The kernel is replete with tables and data structures into which rootkits can inject themselves, including the SSDT, IDT (Interrupt Descriptor Table), IRP (I/O Request Packet) structures, Microsoft Reserved Partitiosn (MRP), and so forth. As one might expect, writing effective AV software requires deep, detailed knowledge of kernel specifics.
+
+In practice, AV software typically scans for these types of rootkits by monitoring memory content, inspecting the memory area referenced by certain pointers located in kernel memory. If pointers reference locations in memory that are not trusted, AV processes can follow that pointer to determine its intent, sending the code contained at that address to a scanning service for verification. As another student noted, this is a reactive approach; to be proactive, AV software must often use heuristics rather than hard rules - scanning for suspicious-looking processes and flagging them or presenting a warning to the user.
+
+### Agony Lab, Part III: Kernel Debugging
+
+Here, we engaged in live kernel debugging, connecting a "debugger" machine to an infected "debuggee", and stepping through kernel memory remotely. Our goal here was to find the `wininit.sys` processes intercepting the calls to NtEnumerateValueKey, NtQueryDirectoryFile, and NtQuerySystemInformation, and observe their behavior as they are called in the debuggee. 
+
+First, we investigated the call stack, setting breakpoints at the original and modified SSDT table addresses for NtEnumerateKey, as reported by Tuluka (see above). Curiously, if we set a breakpoint at the address for NtEnumerateKey, the call to an intercepting wininit-based process could not be seen; it was as if the proper system call had been reached without being hooked:
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/ntenum/debugger-call-stack.png">
+    <figcaption>Call stack, no rootkit visible</figcaption>
+</figure>
+
+However, if we set a breakpoint at the address where the rootkit is located, we see a different picture:
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/ntenum/debugger-call-stack-rootkit.png">
+    <figcaption>Call stack showing rootkit</figcaption>
+</figure>
+
+To investigate why this happens, I stepped through WinDbg from the breakpoint set at the start of the rootkit function (address 9d8e6480), looking for the instruction at which wininit's place in the call stack disappeared. After manipulating and pushing a few registers, the wininit function called NtEnumerateValueKey itself - behavior consistent with the interception methods discussed earlier in Mr. Kapoor's lecture. Once NtEnumerateValueKey was called, wininit vanished from the call stack. Looking more closely at the assembly code within wininit  prior to the call to NtEnumerateValueKey, I noticed an odd manipulation of the stack pointer: `sub esp, 24h`; this subtracts 36 bytes from the stack, which is not itself suspicious - local variables are often created by first subtracting the stack pointer, then moving values into offsets from that stack pointer. In this case, however, nothing is occupying that space in the stack; the wininit function continues pushing more values without placing anything in the void left by the `sub` instruction. 
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/ntenum/ntenumerate-stepping-through.png">
+    <figcaption>wininit rootkit: disassembly</figcaption>
+</figure>
+
+I suspect that wininit's disapperance from the call stack once NtEnumerateValueKey is called has something to do with this instruction - the function itself is manipulating the stack pointer to clean up any return values or memory addresses that would cause it to appear. 
+
+Moving on, Mr. Kapoor asked us to find the offset of the call to the intercepted function - relative to the start of the intercept_ing_ function - in each of the three system calls. To accomplish this for NtEnumerateValueKey, I stepped through the debugger (with the "p" command) until the first call instruction was reached:
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/ntenum/ntenumerate-call-instr.png">
+    <figcaption>wininit rootkit: call to NtEnumerateValueKey</figcaption>
+</figure>
+
+If I entered `dd 9d8e735c`, looking at the content of memory at the address pointed to by the call instruction. Sure enough, the "original" SSDT address of NtEnumerateValueKey could be found at that address:
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/ntenum/ntenumerate-dd.png">
+    <figcaption>wininit rootkit: Location of NtEnumerateValueKey address</figcaption>
+</figure>
+
+I noted the address of the call instruction as 9d8e64d4; given that the function starts at offset 9d8e6480, the offset from the start of the function call is 54h, or 84 bytes. 
+
+The process for NtQueryDirectoryFile was similar: I set a breakpoint at 9d8e6050, the intercepting (wininit-based) function's address as reported by Tuluka, then stepped through the function one instruction at at time until the first call instruction was reached:
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/ntquerydir/ntquerydir-disassembly.png">
+    <figcaption>wininit rootkit: call to NtQueryDirectoryFile</figcaption>
+</figure>
+
+Confirming (with `dd 9d8e734c`) that the value at the address pointed to in the call instruction corresponded with the original kernel memory address of NtQueryDirectoryFile, I again marked the address of the call instruction as 9d8e6086; the offset from the start of the intercepting wininit function was then 9d8e6086 - 9d8e6050 = 36h, or 54 bytes.
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/ntquerydir/ntquerydir-dd.png">
+    <figcaption>wininit rootkit: Location of NtQueryDirectoryFile address</figcaption>
+</figure>
+
+Similarly, the offset of NtQuerySystemInformation was determined by first setting a breakpoint at memory address 9d8ef500, stepping through the disassembly to the first call instruction, checking that the address pointed to in the call instruction matched the appropriate system call, and noting the value of the address at which that call instruction appeared:
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/ntquerysys/ntquerysys-disassembly.png">
+    <figcaption>wininit rootkit: call to NtQuerySystemInformation</figcaption>
+</figure>
+
+Here, the call instruction appears at address 9d8ee5f1a; thus, at an offset of 1Ah = 26 bytes from the start of the intercepting wininit function.
+
+## Day 2
+
+We began the second day's lecture with an extension of the previous day's Agony lab; now, we were going to manually patch back the SSDT table to its original, pre-infection state, rendering the malware into dead code. Following this activity, we would dive even deeper into our machine, discussing bootkits and the system boot process. 
+
+### Patching the SSDT
+
+To patch back the SSDT to normal within the debuggee, I needed to investigate the entries in the SSDT modified by the malware infection, and manually change the system call addresses pointed to by that entry. Returning to LiveKD, I again entered the `dps nt!KiServiceTable L 191` to observe the content of the SSDT; as noted above, the left-most column in each entry represented the memory address of the entry itself. As such, I could set a breakpoint in WinDbg at the address of that entry, then use WinDbg's "Memory" window to edit the address at this entry back to its original value, byte by byte:
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/patching-back-addrs.png">
+    <figcaption>Patching back SSDT entries</figcaption>
+</figure>
+
+Here, note the first four bytes in the top line; this is, in little-endian order, the correct SSDT address for NtQueryDirectoryFile. Returning to Tuluka and refreshing, I noted that this system call had disappeared as a "suspicious" entry in the SSDT:
+
+<figure>
+    <img src="/assets/img/week5/agony_lab/ntquerydir-patched.png">
+    <figcaption>NtQueryDirectoryFile disappears from "suspicious" list</figcaption>
+</figure>
+
+This process was repeated for each of the affected system calls. As a result, the rootkit's behavior was nullified. Mr. Kapoor was careful to note that not all rootkits would be thwarted by this change; some are written to monitor changes to the SSDT and re-modify them once repaired. Manually editing SSDT entries is _not_ a typical task, too - this is typically performed manually by AV or file-system analysis software. 
+
+### Bootkits and the System Boot Process
+
+Mr. Kapoor continued his lecture with a brief survey of rootkit stealth techniques. Modifying the SSDT is a common tactic, and our experience with the Agony rootkit helped us to understand, in detail, how this sort of technique is employed. There are many, many ways for a rootkit to take hold in a Windows system, however, and Mr. Kapoor discussed a few other common targets, such as  DKOM (Direct Kernel Object Manipulation), hooking the IRP, and inline hooks, which modify the function itself, rather than an operating system table or structure - this is the behavior displayed by the _Zbot_ malware analyzed in Day 1. 
+
+Perhaps the most dangerous and harmful technique is to modify the Master Boot Record, (MBR) which can alter or corrupt memory before the operating system itself launches. This form of malware is known as a "bootkit". As a bootkit can load itself into memory before the launch of the operating system, it can bypass security checks that the OS might have installed to prevent a particularly dangerous or harmful attack - at this level, there are few protections from a malicious file. 
+
+The system boot process for a PC is generally as follows:
+- The BIOS initializes hardware, calls code stored in MBR at the start of the first hard drive sector.
+- The MBR loads code from the boot sector of the active partition
+- The boot sector loads and runs the bootloader from the file system.
+- Once the bootloader is executed, configuration and database information is loaded from files on the same partition.
+- If multiple operating systems are present, the bootloader may present a boot menu with a list of operating systems, as loaded from the configuration file.
+- Finally, the bootloader locates and loads the kernel for the selected (or only) OS, giving control of the PC to the operating system.
+
+Here, we can see that a bootkit has many opportunities to change fundamental operating system procedures before it loads. 
+
+Examples of bootkits include the infamous Sony wiper attack, discussed in Week 2. One component of this attack was a bootkit that over-wrote the MBR along with other files, essentially wiping the hard drive on system boot.
+
+Ransomware can also be implemented as a bootkit, in which the first MBR sector is re-configured to simply display a message instead of booting (with an address to which the target should send Bitcoin, for instance). On receipt of payment, the attacker typically supplies a password to the infected user, which patches the MBR back to normal and restores system functionality. 
+
+A standard known as [Secure Boot][secure-boot] has been developed to prevent this sort of mischief - essentially, firmware checks each piece of boot software - including the OS - against a digital signature, at each step of the boot process. If a signature is found that doesn't match what is expected, the system attempts to load backup boot software or firmware; failing this, it loads anti-malware software. Unfortunately, this breaks legacy tools, and as such it is not a cure-all. 
+
+From here, Mr. Kapoor discussed a specific example of a bootkit, named _StealthMBR_. This malware modifies the boot process in a similar fashion to the "hooking" behavior described earlier - it copies the original MBR to sector 62, creates an installer at sector 61, and infects sector 0 of the hard drive such that a modified MBR is first loaded by the bootloader. This modified MBR gives control to the rootkit installer at sector 61, which loads a rootkit into memory, then calls the original MBR at sector 62. 
+
+Next, it hijacks the IRP Dispatch table, such that read requests to Sector 0 of the disk (by an AV process, for instance) are instead redirected to the original, pre-infection MBR at Sector 62. It also includes a watcher thread that monitors for modifications to this table, patching it back if it detects a fix. These redirection and "filtering" techniques are very reminiscent of the techniques employed by the _Agony_ malware observed in the Day 1 labs - although _StealthMBR_ is markedly more complex.
+
+Mr. Kapoor intended to conclude this lecture with a lab exploring the TDSS malware, which inserts itself into the "device stack" of the disk, a chain of drivers that are serving it. By investigating with WinDbg, we'd be able to see the original and the modified MBR, as the modified driver object injected itself into the device stack. Unfortunately, the malware didn't present as Mr. Kapoor had expected, and so the lab was abandoned. 
+
+Looking into [TDSS][alureon] myself, I found that it is also known as Alureon, and is somewhat notorious malware used to steal user bank account information, among other things. It is able to use the print spooling service, `spoolsv.exe`, to modify the MBR and run a custom bootstrap routine, as described above. Upon system boot, the malware blocks access to Task Manager, AV software, the desktop, and Windows Update, and listens for network traffic containing personal user information. As reported by Wikipedia, it evolved to a point at which it was able to bypass the driver signing required as part of the Secure Boot process. 
+
+### Trends in Stealth Malware
+
+We concluded this week's lectures with a discussion of trends in stealth malware. These include file forging, memory forging, disassociating memory from file-on-disk, and attacking AV software directly.
+
+When malware disassociates memory from the file-on-disk, it is attempting to hide from system calls like NtQuerySystemInformation that can reveal its source on disk. Stealth malware accomplishes this by removing itself from the list of loaded modules; thus, it cannot be found by these system calls. So, we an't know which module on the disk is responsible for the malware's behavior. 
+
+File content forging is a technique in which existing files are overwritten, then forged such that AV sofware's "view" of the file shows a clean, unmodified entity. This is considered more optimal than hiding files, as the forged file cannot be found by tools like file-system parsers. 
+
+Malware can remove dependencies on files, thus removing itself from the filesystem to hide from antivirus software. 
+
+Malware often includes some form of self-preservation, as a means of ensuring persistance. This includes watcher threads (such as those observed with TDSS, above) that re-infect or re-modify tables and other kernel entities if a fix is detected. It can also include detection engines (similar to our own yara rules) that find and neutralize antivirus software. 
+
+Malware targeting point-of-sale (POS) devices can modify the "whitelist" present on many such machines, removing AV from a list of trusted applications and inserting itself as a legitimate application on the system. This can make removal especially difficult, as the AV must now find a way to gain the necessary permissions to even load.
+
+### Brazilian Banker Rootkit
+
+As with the TDSS lab, this lab was truncated as we ran out of time. The intent of the lab was to analyze the Brazilian Banker Rootkit, which registers for a callback that is activated when any security software or unwanted software loads; when the callback fires, the process's entry point is modified such it first executes a `mov dword ptr [eax], 1B8h` instruction, triggering an error code in Windows, which is delivered to the user. This is a slight variation on the "hooking" behavior described above - here, otherwise-legitimate callback functionality is being exploited to target AV software.
+
+### Yara Rules
+
+Mr. Kapoor concluded his lectures with an assignment: writing robust yara rules for the _Agony_ malware that we investigated earlier this week. I made an attempt to create these rules, although had a difficult time finding a good byte-level representation of the malware - matching with strings could have been accomplished without much trouble, although as Mr. Kapoor noted, matching in this way does not account for slight variations in the malware - specific directory or file names could easily be modified. My intent was to execute the malware twice, collecting memory dumps from the debugger and, essentially, performing a _diff_ between them, looking for hard-coded memory addresses or instruction patterns that would be useful in a yara rule. Unfortunately, I ran out of time here, as I needed to focus on this week's homework, and I didn't want to fall too far behind.
+
+Next week, we discuss network security, a field that I'm planning to explore as part of my final project. I'm looking forward to it.
+
+[ssdt]: https://en.wikipedia.org/wiki/System_Service_Descriptor_Table
+[stack-overflow-threads]: https://stackoverflow.com/questions/12911841/kernel-stack-and-user-space-stack
+[secure-boot]: https://docs.microsoft.com/en-us/windows-hardware/design/device-experiences/oem-secure-boot
+[alureon]: https://en.wikipedia.org/wiki/Alureon
