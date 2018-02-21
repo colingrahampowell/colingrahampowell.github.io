@@ -1,0 +1,221 @@
+---
+layout: post 
+title:  "Week 6"
+date:   2018-02-19 17:00:00 -0500
+categories: dada 
+---
+
+## Introduction
+
+We shifted gears somewhat this week, as Ram Venugopalan and Geoffrey Cooper presented an overview of network security concepts. General concepts, terms, and technologies were addressed; the field of network security is massive and complex, and covering it in depth would require a series of courses, instead of a short series of lectures. As such, Mr. Cooper and Mr. Venugopalan focused on the most important and relevant subject matter, allowing us to explore key topics in depth through lab work.
+
+## Day 1
+
+Mr. Cooper delivered the first series of lectures, and began with a question: "Why do we need network security?" Network security is about creating a "safe space" for users on a network - keeping dangerous hosts _out_, and critical data _in_. Threats can exist anywhere on a network; there are many vectors by which a network can be compromised - including simple CDs and USBs - and as threads come in from the network and attempt to gain a foothold from outside of the network, careful strategy and planning is required to minimize or mitigate their effect.
+
+We next discussed the "Robustness Principle", a concept originally presented in 1980 as part of [RFC 760][rfc-760]. It states:
+
+"Be liberal in what you accept, and conservative in what you send"
+
+This was presented in the context of network protocols, as a means of supporting flexible, extensible network communications. In essence, it can be interpreted as "assume the worst in what you receive, and try to stay as close to a protocol's specification in what you send." When this was written, however, the notion of network security was at best nascent, and the notion that attackers might target this liberality was not especially prevalent. The idea is not without merit, but in an age of rampant network threats, it should be considered in a more nuanced manner.
+
+### Robustness Principle Worksheet
+
+In [RFC 1122][rfc-1122], Jonathan Postel wrote the following passage. As part of the week's exercises, I examined his assertions, coloring text green where I agreed, and red where I did not. In each case, my reasoning is listed following each highlighted section.
+
+<mark class="disagree">At every layer of the protocols, there is a general rule whose application can lead to enormous benefits in robustness and interoperability:</mark>
+
+- This was true in 1980, but in 2018, the notion of "robustness" almost certainly includes a network's ability to withstand attacks from outside entities. Being overly permissive in what can be sent to a network can lead to a tangled mess of "real protocols" and "de facto protocols", and it can be confusing for a network administrator or network security engineer to know how to interpret non-conformant network traffic - .e.g, is it malicious, or just not to spec? Lines need to be drawn more clearly.
+
+<mark class="disagree">“Be liberal in what you accept</mark>
+
+- As discussed above, being liberal in what you accept, while possibly beneficial in terms of network robustness, leaves systems open to attack from vulnerabilities in legacy code or odd configurations of flags and header values. Generally, it increases the "attack surface" of a particular network node, which leaves it far more vulnerable to attack
+
+<mark class="agree"> and conservative in what you send”</mark>
+
+- I see no issue with sticking as close to the specification as possible. Keep packet contents within expected specifications - otherwise, they may be flagged as suspicious.
+
+<mark class="disagree">Software should be written to deal with every conceivable error, no matter how unlikely; sooner or later a packet will come in with that particular combination of errors and attributes, and unless the software is prepared, chaos can ensue.</mark> 
+
+- I suppose that I technically agree with this, although perhaps not in the same way as Mr. Postel. It seems more effective for network software to enact a _whitelisting_ policy, in which only specific permissible behaviors and packet contents are allowed on a network. In this way networked software and components "deal with every conceivable error", in the sense that they ignore anything that doesn't match a strict specification.
+
+<mark class="agree">In general, it is best to assume that the network is filled with malevolent entities that will send in packets designed to have the worst possible effect.</mark>
+
+- Absolutely. It is safest to assume the worst from any network.
+
+<mark class="agree">This assumption will lead to suitable protective design,</mark> 
+
+- As above, thinking of the network as an inherently unsafe and dangerous place is necessary to properly secure users and data.
+
+<mark class="disagree">although the most serious problems in the Internet have been caused by unenvisaged mechanisms triggered by low-probability events; mere human malice would never have taken so devious a course!</mark>
+
+- It's hard to quantify the seriousness of a problem, but this passage was written in 1989, in the dark ages of malware and network-based attacks - it is safe to say that very serious problems have since been created as a result of human malice.
+
+<mark class="agree">Adaptability to change must be designed into all levels of Internet host software.</mark>
+
+- I'd agree with this to a certain extent. Network devices should be versatile enough to support different protocols and configurations, but they should not be forced to account for change unless explicitly programmed to, for instance, accept a new protocol or header configuration.
+
+<mark class="disagree">As a simple example, consider a protocol specification that contains an enumeration of values for a particular header field—e.g., a type field, a port number, or an error code; this enumeration must be assumed to be incomplete. Thus, if a protocol specification defines four possible error codes, the software must not break when a fifth code shows up. An undefined code might be logged (see below), but it must not cause a failure.</mark>
+
+- See the above comment regarding whitelisting. I don't disagree that software should _support_ extensibility, but ideally the software should have a way to simply ignore any non-conformant messages unless explicitly programmed to accept them. While software shouldn't necessarily break when receiving an unexpected packet configuration, it should not necessarily need to accept or react to those messages. Inherently allowing this increases the attack surface of a networked component, making it more susceptible to attack.
+
+<mark class="agree">The second part of the principle is almost as important: software on other hosts may contain deficiencies that make it unwise to exploit legal but obscure protocol features. It is unwise to stray far from the obvious and simple, lest untoward effects result elsewhere.</mark>
+
+- This is still accurate. The latter half of the Robustness Principle still holds - to ensure that packets are delivered without issue, stick as close to the protocol as possible. 
+
+<mark class="agree">A corollary of this is "watch out for misbehaving hosts"; host software should be prepared, not just to survive other misbehaving hosts, but also to cooperate to limit the amount of disruption such hosts can cause to the shared communication facility.</mark>
+
+- This relates to the "layered defense" strategy discussed below. Each layer in a network should have its own security functionality; together, these measures can work to mitigate or eliminate any negative effects from an attack. For instance, networked components such as an Intrusion Protection System could watch for the above-mentioned misbehaving hosts, neutralizing them before an attack is allowed to spread.
+
+### Network-Based Protection Strategies
+
+We continued with a discussion of some of the most prominent network-based protection strategies. First among these is _Positive Policy_, in which only the _expected behavior_ is defined. All other behavior is considered suspicious and not allowed. This strategy grants the defender an advantage, in that the defender defines the entire scope of possible network activity; an attacker is less able to probe a network in search of exploitable activity, as the defender is aware of and has (ideally) planned for exactly the form of activity that they approve. In this way, the attack surface is minimized. However, this form of protection has a disadvantage in that it doesn't allow the defender to know the exact form of an attack - activity is defined as either approved and acceptable, or unapproved and unknown. 
+
+Firewalls and security zones were discussed next: the most common implementation of a security zone policy is to define "zones" in the network with specific policies allowing for interaction between those zones. _Firewalls_ sit between those zones and filter traffic based on those policies. Typically, firewalls describe policies from IP address to IP address, although policy can also be enforced based on the application being used in combination with the IP addresses, or the specific user in combination with the IP addresses. To understand security zones and firewall policies more clearly, we were given a worksheet in which we were meant to fill in a complete policy for a series of zones in a network. This is discussed in detail below.
+
+Other firewall-like policies include web gateways, which proxy web connections to apply a specific policy. A web gateway, in effect, "splices" two connections, evaluating data from an original connection and regenerating it on the other side. A web gateway is more granular, and can selectively apply policies in a way that allows _some_ content to arrive to the target host - malware laden portions of a packet or series of packets can be stripped away without compromising it entirely. An email gateway is similar: it proxies SMTP to filter mail, removing any unwanted mail based on its policy and presenting the rest to the user. This was originally designed to accommodate anti-spam features.
+
+We next discussed the concept of _defense in depth_, the notion that we should create a set of defenses at each layer in the network, and assume that any layer (or combination of layers) can fail. Mr. Cooper likened this to the notion of a medieval castle, with a series of defenses intended to contain and minimize the damage caused by an attack - the barbican protects the drawbridge, which protects bailey, which protects the keep, and so forth. Examples discussed in class include:
+
+- The DMZ might be likened to watch towers allowing the network (the castle's defenders) to sound the alarm and ready defenses. 
+- The firewall could be considered a form of portcullis, a gate that shuts to broadly deny attackers entry.
+- The keep could be considered the database or data center, the primary target of an attack.
+- the king's suit of armor could be compared to user-specific protection software that blacklists the remote host that brought the infection.
+
+Discussion continued for some time, and there are a lot of parallels to draw here, but the general notion is that network security should be considered at all levels. Mr. Cooper emphasized the importance of defense in depth - 
+
+From here, we discussed intrusion detection and protections systems (or, IDS/IPS) - these use signatures and anomaly detection algorithms to detect and neutralize attacks. In a way, these are the inverse of firewalls, in that they use a _blacklist_ to identify attacks; the IPS is configured such that unwanted behavior is identified rather than permissible behavior. IPSs are very good at catching well-understood threats, which is useful in networks that contain a lot of varied equipment with varying patch levels - a series of POS systems running Windows XP Embedded, for instance. IPSs are _not_ capable, however, of catching zero-day attacks, as they can only catch the sorts of threats that they are programmed to identify. These devices must also be carefully configured to minimize false positives - a device that produces too many false positives will eventually be ignored.
+
+Other protection strategies discussed include:
+- Honeynets or Intrusion Deception, in which a network is created specifically to lure attackers, wasting their time with "sucker algorithms" that ACK 1 byte at a time, or phony content that seems to be of value. Cliff Stoll used this strategy to great (and amusing) effect in his book "The Cuckoo's Egg". 
+- Quarantines, in which misbehaving hosts are placed into an area where they can't infect any other hosts.
+- Reputation, a big data solution in which IP addresses, URLs, and files are tracked, with good and bad qualities combined to form a sort of score - IP addresses known to be associated with spammers, for instance, might be deducted web reputation points. This is also susceptible to zero-day attacks, as it takes time for reputation (good or bad) to be established.
+
+The final portion of this segment involved connecting a few network security "components" into full-fledged products, observing that many network security strategies are essentially kits of parts combined in different ways. For instance:
+- IDS combines passive capture, deep state inspection, and intrusion detection.
+- Firewalls combine packet filtering, deep state inspection, and policy.
+- Web Gateways combine proxies, intrusion detection, static analysis, cryptographic inspection, and policy.
+
+### Firewall Policy Worksheet
+
+This table represents my attempt to complete the firewall policy worksheet provided with this week's material. The security zones in this hypothetical network are as follows:
+
+<figure>
+    <img src="/assets/img/week6/zones.png">
+    <figcaption>Worksheet: Security Zones</figcaption>
+</figure>
+
+
+
+| #  | Source                     | Destination           | Service                              | Action | Alert | Comments                                                                                           
+|----|----------------------------|-----------------------|--------------------------------------|--------|-------|-----------------------------------------------------------
+| 1  | Intranet                   | Internet              | (HTTP & TCP/80) &#124; (HTTPS & TCP/443) | Permit | No| Everyone on the Intranet is allowed to browse the Internet 
+| 2  | Intranet                   | DMZ                   | DNS & UDP/53                         | Permit | No    | Connect to an external-facing DNS server which will handle DNS queries. Split DNS servers into corporate or internal servers and external-facing servers.
+| 3  | Intranet                   | Internet              | SMB                                  | Deny   | Yes   | Do not allow file browsing over the internet and alert so we can catch the sucker.  
+| 4  | Corp DC                    | Cloud DC              | SSH & TCP/22                         | Permit | No    | Allow Corp and Cloud to connect - create secure tunnel between them                                
+| 5  | Cloud DC                   | Corp DC               | SSH & TCP/22                         | Permit | No    | Allow Cloud and Corp to connect - create secure tunnel between them                                 
+| 6  | Corporate                  | Data Centers          | SMB                                  | Permit | No    | Enable corporate workstations to share files with the DCs                                                
+| 7  | Internet                   | DMZ                   | (HTTP & TCP/80) &#124; (HTTPS & TCP/443) | Permit | No    | DMZ Web server traffic will be on HTTP TCP/80 or HTTPS TCP/443.                     
+| 8  | Internet                   | DMZ                   | SMTP & TCP/25                        | Permit | No    | The DMZ mail server will communicate on TCP/25                                                           
+| 9  | DMZ                        | Internet              | SMTP & TCP/25                        | Permit | No    | The DMZ mail server will communicate on TCP/25                                                           
+| 10 | Partner 1 on Internet      | External Access Point | HTTPS & TCP/443                      | Permit | Yes   | Allow trusted partners access via SSH. Send alert to ensure that partner is not compromised.             
+| 11 | Trusted client on Internet | External Access Point | HTTPS & TCP/443                      | Permit | Yes   | Allow trusted client to access via SSH. Send alert to ensure that client is not compromised.      
+| 12 | Internet                   | Corporate -->Labs     | ALL                                  | Deny   | No    | No Internet access to labs should be possible. Avoid alerting to prevent over-filling alert logs.        
+| 13 | Corporate                  | Labs                  | SSH & TCP/22                         | Permit | No    | Corporate users should be able to access lab machines via SSH.
+| 14 | Intranet                   | Extranet supplier 7   | HTTPS & TCP/443                      | Permit | No    | Secure HTTP connections between intranet and extranet suppliers.                                        
+| 15 | Intranet                   | Cloud DC              | SSH & TCP/22                         | Permit | No    | Backup servers should be on Cloud DC and can be sent data via SSH. 
+| 16 | Cloud DC                   | Intranet              | SSH & TCP/22                         | Permit | No    | Backup servers should be on Cloud DC and can provide data via SSH.                                                       
+| 17 | Corporate                  | Cloud DC              | RemoteDesktop                        | Permit | Yes   | Corporate users should be able to access CloudDC remote desktops.                                        
+| 18 | Internet                   | External Access Point | RemoteDesktop                        | Permit | Yes   | Allow users to connect to their desktops from home                                                       
+| 19 | Internet                   | External Access Point | VMWare control                       | Permit | Yes   | Allow users to connect to their desktops from home                                                       
+| 20 | Internet                   | Corporate Web Server  | (HTTP & TCP/80) &#124; (HTTPS & TCP/443) | Permit | No    | Internet users can browse corporate web server; allow HTTP on TCP/80 and HTTPS on TCP/443.           
+| 21 | Corporate                  | Corporate Web Server  | SSH & TCP/22                         | Permit | No    | Local admins can maintain the corporate web server. Allow them access via SSH on TCP/22.                 
+| 22 | Intranet                   | Corporate Web Server  | (HTTP & TCP/80) &#124; (HTTPS & TCP/443) | Permit | No    | Intranet users can access corporate web server. Web traffic will be on HTTP at TCP/80 or HTTPS at TCP/443 
+| 23 | DMZ                        | Corporate             | IMAP & TCP/143                       | Permit | No    | Corporate users can read their mail - will fetch mail from DMZ mail servers on TCP/143.                  
+| 24 | Corporate                  | DMZ                   | SMTP & TCP/587                       | Permit | No    | Corporate users can send mail. Will send mail to SMTP server on TCP/587.                                 
+| 25 | Intranet                   | Corporate DNS server  | DNS & UDP/53                         | Permit | No    | Allow internal DNS queries.                                                                              
+| 26 | Internet                   | Corporate DNS server  | DNS & UDP/53                         | Deny   | No    | Handle external DNS queries via DNS server at DMZ. Do not allow external access to internal DNS  servers. 
+| 27 | DMZ                        | Corporate DNS server  | DNS & UDP/53                         | Deny   | No    | Corporate DNS server should be kept separate from external-facing DNS.
+| 28 | ANY                        | ANY                   | ALL                                  | DENY   | NO    | Firewall policy is best done with a deny all rule at the bottom.  
+
+For the DNS servers, I decided to assume that DNS was separated into distinct public-facing or external components and internal or corporate components (a ["split horizon"][split-horizon] configuration). Hosts originating from the Internet should not be able to directly interface with corporate DNS servers. Intranet connections to external hosts (e.g., the Internet) should be handled by a separate DNS server dedicated for this purpose. In this way, corporate-specific assets can be kept safe.
+
+I'll admit that I was unsure about most of the content on this worksheet - it seemed more of a thought exercise, but I was less familiar with the particularities of, for instance, communication between local and remote data centers. 
+
+### Threats: Person in the Middle
+
+We continued the Day 1 lecture with a discussion of "Man in the Middle" (or MITM) attacks, in which a third party listens for and examines network traffic between two endpoints. This is can be used for legitimate and illegitimate purposes. An attacker might employ this strategy to hijack TCP packets, injecting, changing, or deleting data contained in packets before they reach their destination, fixing them up so that the modification goes unnoticed. MITM strategies are also used in ARP poisoning, an attack in which a network is flooded with Address Resolution Protocol responses, fooling hosts into thinking that the sender of these responses is the Internet gateway. 
+
+MITM strategies are often used for good, however. Consider a mail proxy that checks outgoing emails for sensitive data before sending them, or an HTTP proxy that intercepts all HTTP traffic and performs detailed verification to ensure that the source host and URL are not associated with a list of dangerous hosts, or that message content does not contain possibly-malicious content. 
+
+In TCP connections, MITM attacks can be detected by using a cryptographically-secure hash such as SHA-1, SHA-256, or SHA-3; MD5 is no longer considered secure. A message's contents are hashed, and added to the message when sent; any modifications to this message will be detected in the receiver when the hash doesn't match. This can be further protected against "replay" of the same hashed message by a man-in-the-middle, using chain packets or sequence numbers such that modifications of the message is detected. Messages can also be encrypted using a "shared secret" scheme such as Diffie-Hellman; in this case, only an owner of this shared secret could possibly decode or meaningfully inspect a message as it is passed between hosts.
+
+We concluded this section with a brief discussion of the vulnerabilities present even in "secure" protocols such as TLS/SSL, noting that the guarantees that it makes are not necessarily air-tight. For instance, the TLS/SSL specification states that "the integrity of the data is guaranteed by as strong a hash as specified in the ciphersuite intended"; some servers still used MD5 to encrypt traffic, making it trivially easy to decrypt. _Heartbleed_ was a notable TLS-based vulnerability, stemming from a missing bounds check; as the vulnerability wasn't discovered until long after the error was made, it is unclear how many servers were compromised, but the vulnerability left an incredible amount of data potentially exposed in almost half of the world's servers - usernames, passwords, and server private keys. Any point in a cybersecurity apparatus can fail, but by carefully layering security measures, we can mitigate the effect of this sort of pervasive, unexpected vulnerability.
+
+### Threats: Reconnaissance
+
+Reconnaissance (or, "Recon") can be _active_ or _passive_. Active reconnaissance involves an attacker searching for specific IP addresses on a network that can be attacked; passive recon involves an attacker learning about the people on the network by observing the data on it.
+
+The most basic recon tool is _scanning_, e.g. trying to connect to hosts and ports; the Linux/Unix _nmap_ command is commonly used to accomplish this. The intent is to discover an IP address-TCP/UDP port combination that can be attacked. Scanning can also search directly for vulnerabilities - simply sending attacks to specific <IP, port> combinations, recording if they worked, and continuing to the next <IP,port> combination. Interestingly, the tools used for network defense are very similar; from the outside, it can be hard to distinguish between "white hat" scanning and "black hat" scanning.
+
+In passive reconnaissance, data is generally obtained by tapping ISPs, physically placing equipment in data or IT closets, or listening to radio signals generated by wireless traffic. _Wireshark_ is a very popular packet analysis and network sniffing tool that can be used to perform detailed packet analysis; the final lab this week used Wireshark to closely inspect a series of packets and draw conclusions from their content. 
+
+In terms of defenses, recon threats can be mitigated through solid policy and deep inspection or well-crafted honeypots. Mr. Venugopalan noted that passive reconnaissance is difficult to defend against without some form of physical security, as packet sniffing often involves a physical attachmente to the target network.
+
+### Threats: Spoofing
+
+Spoofing describes an attack in which the attacker masquerades as another network entity to subvert or foil the network defenses of a target system. The ARP spoofing described above, for instance, is used to trick other hosts into thinking that the attacking host is a web gateway. Much of a packet can be spoofed, including TCP sequence numbers, IP addresses, MAC addresses, and so forth. Defending against spoofing typically involves some form of deep packet inspection, and reverse path filtering, in which the path along which a packet arrived is considered. 
+
+### Threats: Resource Consumption
+
+Resource consumption threats are based around the notion of consuming as many network resources as possible. The "classic" resource consumption threats is a DoS (Denial of Service) attack, in which many, many requests are sent for a target resource, bogging down the network. A DDoS (Distributed Denial of Service) is larger in scale, using thousands and thousands of computers (typically a botnet) to swarm a target. DoS attacks can target:
+
+- Network exhaustion: flooding the network with requests, increasing latency,
+- CPU exhaustion: making the CPU so busy that legitimate traffic can't be served,
+- Storage exhaustion: causing the server to exhaust its disk space,
+
+and so forth. Essentially, any finite or limited resource can be targeted, crippling the target system. 
+
+To defend against DoS attacks, network products can be used to cleanse network traffic; firewalls, for instance, can validate protocols and ports, preventing vulnerabilities from being exploited. IPSs can detect known behavior tied to DoS attacks and alert the target system. These forms of defense alone are not sufficient, however - often, the solution involves leveraging a "scrubbing center" with massive bandwidth capabilities; these absorb the force of a DoS and DDoS attack, scrubbing illegitimate traffic before letting the rest through.
+
+### Threats: Bugs and Backdoors
+
+Backdoors and bugs are also common threats; succinctly, a backdoor is an intentional vulnerability, whereas a bug is unintentional. Bugs can take the form of buffer overflows, protocol design issues (such as passwords in the clear), and other oversights. 
+
+### Defense Basics
+
+The next portion of the lecture addressed defense basics, including packet filtering, NAT, and proxying.
+
+_Packet filtering_ is a fairly basic defense strategy, involving validation of packet contents against a whitelisting policy. Only expected traffic is allowed to pass. Mr. Venugopalan discussed the difference between _stateful_ and _stateless_ packet filtering: the first involves actual inspection of the packet, whereas the latter involves simple application of policy rules. 
+
+_Deep inspection_ looks through packet data as well as network headers, looking for trace protocol headers and multiple protocols, and performing signature or dictionary processing on content. 
+
+_Proxying_ is a more detailed form of packet filtering, in which TCP connections are actually terminated, inspected, then newly established, "cutting off" any man-in-the-middle. As noted by Mr. Cooper, proxies can provide a granular, highly-controlled inspection that preserves non-malicious portions of a packet. This does come at a cost, however - the computation and network time needed to inspect a packet and establish a new TCP connection will cause higher latency.
+
+_NAT_, or Network Address Translation, is a method allowing a multiple endpoints to share the same IPv4 address. In a NAT-ed system, a local private (IP address, port) combination is mapped to a (public IP address, port) combination; in this way, a single Internet-facing IP address can serve multiple endpoints located behind that NAT-ed device. In terms of network security, this is useful in that attackers have a much more limited "view" of a network - they have no access to the machines located behind a NAT-enabled router, for instance. For hosts, NAT allows for connection to remote hosts without revealing one's own IP address; this can thwart packet sniffers located on the Internet-facing side of the NAT. 
+
+The _NGFW_, or Next Generation Firewall Policy, attempts to address the fact that applications are not port and protocol-specific; consider that NAT, for instance, obfuscates the actual destination port on the receiving host computer. Application identification, then, should be based on the actual content in network streams. Firewalls must now consume and interpret external sources and threat intelligence, using data like URLs and filenames to interpret policy instead of simple IP address and port number combinations. 
+
+_VPN_ / _IPSec_ is a security layer allowing IP packets to be encrypted and sent between endpoints. A network constructed from these tunnels is called a _VPN_ (or, "Virtual Private Network"). When IPSec is deployed in "tunnel mode", complete IP packets are encapsulated in an Authentication Header located between the IP header and payload. An IPSec connection is established between two peers using a Diffie Hellman public key exchange, implemented through the Internet Key Exchange (IKE) protocol. Once this occurs, the two peers can communicate in encrypted fashion. In effect, this can make a particular host's network traffic very difficult to observe and interpret.
+
+### Defense: NIPS
+
+The lectures continued with a discussion of IPS and NIPS (Network Intusion Prevention Systems). IPS uses signature- and anomaly-based detection strategies to find and report attacks, allowing network administrators to take corrective action. 
+
+Signature-based IPS is a popular variant, in which a database of known attack signatures (similar to our YARA signatures from a few weeks ago) is read and used to inform the device of possible threats. This method can yield fewer false positives - which is very important - but requires constant updating and patching, which can be difficult to track and enforce. An interesting application of this defense method is the "Virtual Patch", in which a signature-based NAT tracks vulnerabilities found in recent software patches, preventing traffic that appears to be exploiting those vulnerabilities from being allowed to pass. In this way, even un-patched systems can be protected. 
+
+Anomaly-based IPS monitors the network for "typical behavior", alerting hosts on the network when something unusual is found. Determination of typical behavior is derived from reading long-term logs of network activity; these training sets must be massive to adequately describe the network, and so a higher degree of setup and initialization is required. However, anomaly-based methods have the ability to detect zero-day threats far more capably than signature-based IPS - it can immediately recognize abnormal behavior and react to it, rather than relying on an external database of threat types. Today, IPS / NIPS is even more advanced, and can be integrated with other components (such as firewalls) to produce a formidable network defense strategy. NIPS-based systems can even perform automated dynamic analysis, running suspicious files in a virtual machine and reacting based on the results.
+
+### Network Security Tomorrow
+
+Mr. Venugolapan concluded his discussion of network security with a brief look into the effect of new technologies on network security. First, a brief note on _connected network security_: as threats grows stronger, it is imperative for network devices to share intelligence between endpoints in an effort to obtain the clearest picture possible. This relates to the corollary in RFC-1122; in effect, connected security attemtps to check for the "misbehaving hosts" that Mr. Postel discussed.
+
+_Advanced Evasion Techniques_ are becoming more prevalent in network attacks. As defense methods become sophisticated enough to reliably detect simpler attack methods, attackers must turn to more clever methods: among these is a technique in which multiple evasion techniques applied to a single packet or set of packets causes Stateful Deep Inspection algorithms to fail. In essence, this method "confuses" an IPS; the methods used to detect evasion may not perform as accurately when presented with a packet containing a variety of these techniques. The "virtual patching" offered by IPS is often the key defense technique used when systems are being updated; if IPS becomes trivially easy to fool, this defense no longer has any value.
+
+Finally, Mr. Venugolapan discussed _Software-Defined Networking_, a method by which a router's control logic is separated from its hardware and routing tables; flow logic can thus be remotely programmed and manipulated to match network conditions. As such, network congestion and security can be greatly improved; network switches can be adjusted on the fly to, for instance, quarantine a bad actor found on the network. This is gaining a foothold in network design, and can safely be labeled the future of networking.
+
+Thus concluded our whirlwind tour of network security. Next, we travel to the top of the network stack, discussing web security.
+
+[rfc-760]: https://tools.ietf.org/html/rfc760
+[rfc-1122]: https://tools.ietf.org/html/rfc1122
+[split-horizon]: https://en.wikipedia.org/wiki/Split-horizon_DNS
