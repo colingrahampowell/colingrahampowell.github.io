@@ -214,7 +214,18 @@ _Advanced Evasion Techniques_ are becoming more prevalent in network attacks. As
 
 Finally, Mr. Venugolapan discussed _Software-Defined Networking_, a method by which a router's control logic is separated from its hardware and routing tables; flow logic can thus be remotely programmed and manipulated to match network conditions. As such, network congestion and security can be greatly improved; network switches can be adjusted on the fly to, for instance, quarantine a bad actor found on the network. This is gaining a foothold in network design, and can safely be labeled the future of networking.
 
-Thus concluded our whirlwind tour of network security. Next, we travel to the top of the network stack, discussing web security.
+### Wireshark Labs
+
+I very much wanted to work on these labs, but simply ran out of time. My focus was on Lab 2, and creating the Python script took longer than expected. I hope to look through Wireshark more closely in the coming weeks, as my final report will likely involve some limited Wireshark analysis. 
+
+I was able to access the .pcap files for the first lab, and began a quick search through the captured packets. I noticed a lot of Google search traffic; possibly a red-herring, or possibly a series of clues. Searching for the string "Betty", I found this message, embedded in the data contained in a packet:
+
+<figure>
+    <img src="/assets/img/week6/betty.png">
+    <figcaption>"Betty" appearance in encrypted packet data</figcaption>
+</figure>
+
+The string "S3cr3t Sp0t" appears here, and the following characters appear to be HTML-encoded characters. This is likely where the illicit meeting time is mentioned. Unfortunately, so ended my time with Lab 1, and thus concluded our whirlwind tour of network security. Next, we travel to the top of the network stack, discussing web security.
 
 [rfc-760]: https://tools.ietf.org/html/rfc760
 [rfc-1122]: https://tools.ietf.org/html/rfc1122
