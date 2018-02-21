@@ -23,7 +23,7 @@ This was presented in the context of network protocols, as a means of supporting
 
 In [RFC 1122][rfc-1122], Jonathan Postel wrote the following passage. As part of the week's exercises, I examined his assertions, coloring text green where I agreed, and red where I did not. In each case, my reasoning is listed following each highlighted section.
 
-<mark class="disagree">At every layer of the protocols, there is a general rule whose application can lead to enormous benefits in robustness and interoperability:</mark>
+<span class="disagree">At every layer of the protocols, there is a general rule whose application can lead to enormous benefits in robustness and interoperability:</span>
 
 - This was true in 1980, but in 2018, the notion of "robustness" almost certainly includes a network's ability to withstand attacks from outside entities. Being overly permissive in what can be sent to a network can lead to a tangled mess of "real protocols" and "de facto protocols", and it can be confusing for a network administrator or network security engineer to know how to interpret non-conformant network traffic - .e.g, is it malicious, or just not to spec? Lines need to be drawn more clearly.
 
