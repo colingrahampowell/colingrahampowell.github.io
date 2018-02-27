@@ -1,0 +1,144 @@
+---
+layout: post 
+title:  "Week 7"
+date:   2018-02-24 17:00:00 -0500
+categories: dada 
+---
+
+## Introduction
+
+We traveled a bit further up the OSI network stack this week, discussing security on the Web with McAfee's Cedric Cochin. Mr. Cochin presented Web security from the perspective of an attacker, noting common attack vectors and defenses. As with Week 6's Network Security lectures, the lectures presented the subject matter at a high level, with labs and activities allowing us to delve more deeply into specific attack and defense methods. The first session focused on attack methods, including cross-site scripting (XSS), DNS spoofing, and SQL injection. The second session included a more detailed commentary on SQL injection, as well as a live demonstration of specific injection techniques. Mr. Cochin's lectures concluded with a brief summary of common research and defense tools, such as PhantomJS and BurpSuite. 
+
+## Session 1: Common Attack Methods
+
+HTTP is the foundation of all data communication on the world-wide web, and as the web grows and evolves, so does the security landscape - bugs found at one point will be fixed quickly, and attacks that work today may not work tomorrow. As noted by Mr. Cochin, Google has had a tremendous effect on the threat landscape; users of the web are less and less likely to manually type in an entire URL, opting instead to use Google to search for specific keywords, and following the first link. Relatedly, a user may use Google to _search_ a target website, instead of using that website's built-in search functionality: I often search for Stack Overflow posts using a Google Search instead of actually visiting stackoverflow.com, for instance. This behavior can be exploited by attackers, who can manipulate Google's search algorithm to return their own malicious site on the first page of common search terms. 
+
+Mr. Cochin continued with a brief history of Web security, dividing Web-based malware delivery into four distinct "ages": The Stone Age, Bronze Age, Iron Age, and today. The Stone Age of the 1990s was characterized by primitive phishing operations (basic websites with mistakes, typos, and so forth), pop-up redirections, and call-script bombing. In the Bronze Age of the early 2000s, phishing became more sophisticated, and nuanced attack methods like cross-site scripting, SQL injection, and browser exploits came into being. The Iron Age of 2005-2010 included the rise of "spear phishing", plug-in exploits, customized browser exploits, and Java exploits. Today, methods like man-in-the-browser (MITB) attacks allow attackers to view and capture Web traffic without ever leaving the browser environment.
+
+As the Web has evolved, so has JavaScript's role in delivering Web-based content. Although its scope was originally limited to helping render content in the browser, JavaScript has developed to the extent that it now interacts with the browser at every level; XMLHttpRequest() functions, for instance, allow for content to be directly fetched from a server using JavaScript. This allows for much of the dynamic content that is part of today's Web, but it comes with security implications - a network could be scanned directly from the browser, for instance. In modern malware attacks, JavaScript is almost always involved - recall Week 4's discussion of heap spraying techniques, in which exploits written in JavaScript were used to fill the heap with malicious code. 
+
+Typically, malware aims for Windows (although _typically_ does not suggest _always_!). There are a number of Windows-specific features - such as EventTrace - that allow malware to establish itself somewhat easily; this, combined with the continued prevalence of Windows-based computers, means that it is still the OS of choice for most malware attacks. 
+
+Injection points for Web-based attacks can occur at many points in the Web stack. Browsers are under attack not only from the network, but from the endpoint itself, as extant malware on a user's system often seeks control of the browser. At the HTML layer, Wininet can be hooked and hijacked, and malicious or vulnerable browser extensions can be installed or attacked. Visible malicious content (a script, for instance) is often "obfuscated" with special characters or misleading variable names to confuse users or researchers. Script engines could also be hooked to observe and modify scripts as they are loaded. 
+
+### User-Level Attacks
+
+The lecture continued with a discussion of user-level attacks. Many of these attacks are based on _social engineering_, which, as discussed in earlier weeks, involves convincing users to _willingly_ install malware or give away personal information. Users are willing to do a lot, and so this can require surprisingly little effort. As Mr. Cochin noted, users are most often the weakest link in a layered security infrastructure. Attackers can exploit laziness and impatience to great effect - recall the _SEO poisoning_ method discussed above, in which attackers populate specific search results with malicious content, taking advantage of users who use Google search results to access websites instead of navigating to specific URLs. User-level attacks are based on the idea that complex malware doesn't need to actually exist on a user's system if they will willingly enter personal information into a form themselves.   
+
+Phishing is perhaps the most notorious of these attacks; this attack method has come a long way since the "Stone Age" discussed above. Fraudulent websites look amazingly similar to their legitimate counterparts, with attackers even registering for SSL certificates through VeriSign or similar agencies to give the appearance of a valid, benign website.
+
+Expanding on the SEO Poisoning method discussed above, it is worth noting that attackers will often specifically target software engineers or programmers - if malware can become resident on a software engineer's website, it could potentially become packaged in whatever that software engineer is developing. In this way, an attacker could maximize the effect of their malware, essentially outsourcing the effort required to distribute it to users.
+
+Fake Antivirus (or, Fake AV) software is another common attack vector, preying on a user's good intentions by masking malware in a seemingly benign wrapper - that of an antivirus program. These programs typically mimic the look of OS-level components, which can be confusing to less savvy users. Fake AV software even mimics the behavior of a file-system scan by simply iterating through a static list of filenames. Mr. Cochin relayed a tale of Fake AV software that even included a full customer support team.
+
+Attackers will often obfuscate URLs themselves, using odd combinations of letters, numbers, and spacing to give the appearance of a legitimate URL: consider that, at a glance, "rnicrosoft" appears identical to "microsoft". Fake top-level domains can be used, such as ".eclu", which if spaced tightly, looks remarkably like ".edu". 
+
+Social media attacks are also common; these often have little to do with malware, specifically, but can be incredibly useful as a means of gathering targeted information for APT-style attacks. Typically, this is is accomplished by slowly working through a target's social network, befriending friends-of-friends (or friends-of-friends-of-friends) and other "adjacent" connections until the target is reached - by the time the attacker reaches the target, they will have established a legitimate-seeming social network from the perspective of the target. Catfishing is classic example of this - an attacker masquerades as an attractive member of the opposite sex in order to establish a "relationship" with a useful target, gathering information from the target as they treat the attacker as a legitimate romantic interest.
+
+Malvertising is somewhat similar to SEO poisoning in that it offloads and outsources distribution to other entities - in this case, online advertising networks. Attackers can create highly targeted ads for specific websites, ensuring that the desired target is reached. When an ad is clicked, the user is redirected to a malicious website. The attacker doesn't need to spend time gaming Google's search algorithms, as they can simply let advertising networks target users instead. 
+
+A similar vector is a _waterhole attack_, in which a commonly-used resource is hacked or poisoned with malware. An attack targeting software developers, for instance, could poison stackoverflow.com instead of seeking out individual developers. This is an efficient distribution method, as it targeting a single commonly-used website is often easier and less time-consuming than targeting a number of distinct users specifically.
+
+There are a number of solutions here, but no silver bullet; as long as users are the weak link, it will be very difficult to totally eliminate attacks that focus on exploiting them. URL and Domain Reputation, a method of "scoring" websites based on positive and negative traits, is one method of identifying and flagging potentially malicious websites; if a user navigates somewhere unsafe, for instance, they could be presented with a warning message notifying them of such. Client and gateway antivirus and anti-malware software is still a relevant tool for catching many such attacks, too. Otherwise, the best defense methods tend to be education: education of end-users, education of content providers, and so forth. As discussed in last week's lectures, a layered defense is the best defense style of all, and by increasing the strength of the user layer, we can greatly limit the number of successful attacks.
+
+### Browser-Level Attacks
+
+Mr. Cochin's lectures continued with a discussion of browser-level attacks. The "attack surface" is fairly massive for a modern browser, which must defend against any number of attacks from without (e.g., from the network) and from within (from the user's own computer). Today's web browsers feature varying levels of security features, although most enforce the Same-Origin Policy, a rule preventing a web application from requesting or receiving resources from a different origin point - if I am visiting a banking website, my browser should not be allow a script embedded in that website to request resources from a different origin point - say, a malicious host. This rule is sometimes broken through CORS, or Cross-Origin Resource Sharing; in fact, much of the modern web depends on CORS to provide the dynamic content that users have come to expect. Other security measures include OS isolation and sandboxing, in which the browser remains as isolated as possible from the underlying operating system. Some browsers even implement each tab in a separate virtual machine, further isolating the browser from the OS. 
+
+_Browser exploits_ are a common browser-level attack, one that we explored to some extent as part of Week 4. In this form of attack, the browser downloads, renders, and executes malicious web content that exploits some known or unknown (zero-day) vulnerability in the browser itself. Typically, this form of attack requires multiple steps: the user must be goaded into downloading and executing the exploit itself.
+
+_Script obfuscation_ is often used to hide or disguise malicious scripts. Working JavaScript can be written in very confusing or difficult-to-interpret ways, which gives an advantage to attackers; scripts can be encoded, compressed, and encrypted in a way that disguises their purpose while still allowing them to function as intended. Obfuscation techniques include removing whitespace, renaming script variables, using eval statements heavily with odd character codes, and so forth. Interestingly, developers often obfuscate their own code to prevent it from being stolen, which can result in false positives from malware analysis programs.
+
+_Man-in-the-Middle_ (or, MITM) attacks allow an attacker to intercept and modify traffic in real time. This form of attack requires inserting a listener mid-traffic, and is thus accomplished using methods like ARP or DNS poisoning, or simply by creating a honeypot-like unsecured wifi hotspot with one's own phone. A free wifi network with an enticing name ("Free Airport Wifi", "Starbucks Wifi") will draw users without a great deal of effort; once those users are connected, their network traffic can be intercepted and stored or modified. Attackers can even gain access to a target's home network by taking advantage of the fact that many popular router brands use the same local IP address. A user's DNS can be hacked such that the hostname associated with the user's home router settings interface is instead directed to a malicious, spoofed web UI. Once the user enters access credentials for their home router into this spoofed interface, an attacker can then access the legitimate router interface, installing custom firmware that allows them to sniff network traffic from the router's perspective. 
+
+_Man-in-the Browser_ (MITB) attacks are conceptually similar to MITM attacks, although they are able to accomplish the same goals without leaving the browser. If an attacker doesn't need to leave the browser to gain access to user financial or account information, they won't - and certain browser or plugin exploits make this possible. I analyzed what I believed to be a MITB attack as part of Week 3's material.
+
+_DNS Spoofing_ was discussed to some extent in Week 6, but was mentioned here specifically in the context of Web security. This can be accomplished in a few ways, but a common method is DNS cache poisoning, in which an ISP's DNS server itself returns a malicious IP address. Thus, a browser will fetch content from a malicious IP, even when the correct hostname in the HTTP header. This is a common (and effective) tool in phishing attacks.
+
+_Click-jacking_ involves tricking the user into clicking a hidden link in a rendered HTML page; layers or HTML frames are used to cloak certain buttons, disguising them as something else. A totally unrelated button might be layered on top of a system message asking the user for permission to enable Flash content, allow control of their camera, activate their microphone, and so forth.
+
+_SQL Injection_ is an important and oft-used attack vector, in which an attacker takes advantage of a mis-configured or improperly designed back-end that doesn't properly sanitize SQL queries. User input can be passed directly to the server - and thus arbitrary SQL queries can be executed with damaging [or amusing][xkcd] results. This is not limited to search queries or form input: some web applications are designed such that user or table-specific IDs are stored in hidden fields within forms on the browser, and packaged with form data when passed to the database. If not properly sanitized, even these fields can be modified and used in a SQL injection attack. As an example, Mr. Cochin presented a hypothetical back-end function in which a SQL query was built by directly copying user input into the query itself: `"SELECT * from users WHERE name ='" + username + "';"`. Consider an attack in which `username` was replaced with `' or '1'='1'`; now, the entire query reads `SELECT * FROM users WHERE name = '' OR '1' = '1';` - which should return _all_ users in the table, instead of just one. This type of vulnerability can be used by skilled attackers to reveal any and all information present in a database. Often, an attacker can glean this sort of information from an even smaller "keyhole", as Mr. Cochin demonstrated during the Day 2 lectures. SQL injection isn't always limited to data, as well - consider that SQL servers often offer some mechanism for bulk import/export of data, implying some degree of file system access. A SQL server that allows the user to execute shellcode implies some form of execution privilege on a system. There are many possibilities here.
+
+_Same-Origin Policy attacks_: in the discussion of the Same-Origin Policy above, it was mentioned that certain "workarounds" exist to circumvent Same-Origin Policy restrictions. Indeed, the modern web depends on such restrictions to properly harness APIs and shared resources. CORS is one such workaround, a mechanism by which servers can specifically allow requests to be handled from different domains; briefly, an "Access-Control-Allow-Origin" header can be set that informs the browser of the resource's willingness to allow requests from separate origins. The Same-Origin Policy controls DOM access between scripts, XMLHttpRequest() calls, cookie access, and plugin access; breaking it is often necessary from a usability perspective, but it can have serious consequences.
+
+_Cross-Site Scripting_ (XSS) takes advantage of these workarounds in the Same-Origin Policy, bypassing it by injecting client-side scripts into another user's web browser and in so doing exploiting a user's trust in a particular web site. This form of attack can come in persistent (more dangerous) or non-persistent (more common) varieties. 
+
+A non-persistent XSS attack doesn't live on a target server; it simply takes advantage of a security hole in an existing website. A common example is a website that displays a user's search query, as-is, back to them - a savvy attacker could embed a malicious script into a link, and share that link with others - when the link is clicked and the site is loaded, the malicious script is executed. 
+
+A persistent XSS attack is slightly different, in that it relies upon delivery of malicious data actually stored on a remote website. As an example, consider an attack in which a malicious script is embedded in a particular post on a web forum; when other users load or view this post, that malicious script is accessed along with the post's other content. 
+
+Cross-Site Request Forgery (XSRF) attacks take a different approach, exploiting a server's trust in the browser, not the browser's trust in the server. A victim's requests are pre-authenticated by a cookie, which allows the victim to, for example, transfer funds without re-authenticating for each transfer. If an attacker notices that a bank's transfers are handled by passing username and transfer amount parameters as part of a GET query, they could manipulate the HTTP request used to generate that transfer, replacing GET query parameters as needed to instead transfer money to their own account from the victim's account. If this link is then embedded in, say, an image in a forum post, and another user visits that website with an active cookie for that bank, the funds are transferred when the page loads - until the victim checks their bank account, they will have no idea that funds have been transferred. This is possible for POST requests as well, if a little more difficult - it's not as straightforward to fool a victim into making a POST request on your behalf.
+
+### Web Goat
+
+I decided to try a few of the WebGoat exercises to get some practical exposure to the concepts discussed in Session 1. I started with the Stored XSS exercise, in which I was presented with a hypothetical human resources page; as "Tom", I was to execute a stored XSS attack against "Jerry" by storing arbitrary JavaScript in the Street field of my employee listing. To do so, I logged in as Tom, navigated to the "Edit Profile" page, and replaced the Street field with a JavaScript alert() function. Logging in again as Jerry, I navigated to Tom's profile listing - as the page loaded, I was greeted with the alert() statement that Tom had entered:
+
+<figure>
+    <img src="/assets/img/week7/webgoat-stored-xss.png">
+    <figcaption>Successful xss attack</figcaption>
+</figure>
+
+Next, I attempted the Fail Open Error Handling exercise, in which I was tasked with gaining access to a password-protected site without knowing the password. In this case, a specific vulnerability in the site's error handling made this possible: the back-end server never checked for the presence of a password field in authenticating the user, so by simply eliminating this field, I could gain access. To do this, I used Firefox's Developer Tools to inspect and change the HTML source corresponding to the password field, changing its "name" parameter to something else - "foo", in my case. 
+
+<figure>
+    <img src="/assets/img/week7/failopen_modifyfield.png">
+    <figcaption>"Password" field name changed</figcaption>
+</figure>
+
+Once this change was made, I could simply ignore the password field when logging in - because no back-end logic existed to check if a password field actually existed, my attempt was successful:
+
+<figure>
+    <img src="/assets/img/week7/failopen_passed.png">
+    <figcaption>Access granted</figcaption>
+</figure>
+
+Finally, I took on the SQL Injection exercise. Here, I was to take advantage of an example website's lack of input sanitization to inject an SQL query into a POST request. This required use of the Tamper Data plugin, which intercepted each request before it had been sent to the server, allowing me to view and modify the request before allowing it to continue. My goal was to return all values stored in the database representing a series of weather stations; ostensibly, only one weather station could be selected from a dropdown list at a time, but through the user of Tamper Data, I could change the body of the POST request such that all stations would be returned. In this case, the "station" field of the intercepted POST request was modified to read `1 OR 1 = 1`; the `1 = 1` statement caused all records matching the SELECT query to be returned, instead of just the record specified in the dropdown box:
+
+<figure>
+    <img src="/assets/img/week7/week7-sqlinject-1.png">
+    <figcaption>SQL Injected - all fields returned</figcaption>
+</figure>
+
+Unfortunately, I was not able to complete the second part of this exercise, in which GET query parameters were modified instead of POST parameters. I had a hard time figuring this one out, as it seemed that the only fields that were pertinient to the database were passed in the body as part of a POST request. After hacking away for 20 minutes or so, I moved on.
+
+## Session 2: More SQL Injection, Analysis and Defense Tools
+
+Session 2 began with an extended discussion of SQL injection, in which Mr. Cochin presented a detailed example to help support a few of the concepts discussed in the previous session's lecture. Here, he showed how a series of probing queries could help an attacker slowly determine the layout of a target's database. Mr. Cochin was demonstrating a "blind" attack, in which the attacker doesn't have the luxury of seeing (possibly informative) error messages from failed database queries. The `or '1'='1'` trick worked here, but Mr. Cochin also showed ways for attackers to change GET query strings to gather information about their level of interaction with the database. For instance, a GET query could be modified such that an ID parameter is passed as `1+1` instead of 2; if the result of that query is the record with an ID of 2, the attacker can surmise that they are communicating directly with the database. Unions and other SQL query methods could be used to determine the number of columns in a query, and to determine if the query results are being directly rendered in the webpage - if so, that page is vulnerable to XSS attacks via SQL injection.
+
+The session continued with a brief overview of defense tools used by malware researchers. Among these are _Alexa_, a domain-based tool that collects data on domain popularity and prevalence, and (somewhat surprisingly) archive.org, which caches historical web page content, allowing users to view a web page as it existed a week (or 20 years) ago. As web-based malware is ephemeral and transient, it can be useful to have "snapshots" of a website's state available; this could allow a researcher access to a sample that might not be available to them otherwise. 
+
+_IPVoid_ checks IP addresses against a list of IP blacklists, flagging IP addresses associated with spam, phishing, or malware. IP addresses can be flagged using classifiers similar to those that we would develop as part of this week's lab, and as attackers often use the same IP address in multiple attacks, flagging an IP address once can thwart multiple attacks. _Webutation_ is a similar clearinghouse of information, although it is URL-based rather than IP address-based. As seen in Weeks 1 and 2, _Virustotal_ can be used to search for file hashes in a large database of known malware.
+
+Simple _whois_ queries can be useful as well, as most legitimate websites keep somewhat accurate _whois_ database entries - an obfuscated or clearly inaccurate _whois_ entry is suspicious.
+
+Mr. Cochin also provided an overview of common client-side research tools. These include _PhantomJS_, which is a scriptable, headless Webkit browser with full DOM support and page thumbnail dump support. It can be driven by scripting languages, and can interact with a page's JavaScript. In a way, PhantomJS automates website interaction as a means of revealing security issues. Tools like _JSUnpack_ automate de-obfuscation of JavaScript, which can be useful for deciphering a script's intent. _BurpSuite_ and _Webscarab_ can be used to intercept and modify traffic to and from a website, allowing for request logging and spidering. _Firebug_ can be used to inspect HTML elements, modify the DOM, and so forth.
+
+### URL Classification
+
+Mr. Cochin concluded the session with an introduction to URL classification, a topic directly tied to this week's lab material. _URL classification_ refers to the process of reading content-based or lexical information about a particular URL, and evaluating its potential to be malicious. 
+
+_Content-based classification_ involves classifying a URL with access to the content at that URL, and can be further classified as manual, static, low-interaction, or high-interaction. _Manual_ classification involves a low-throughput, detailed analysis of a particular URL, using some of the research tools discussed above. _Static_ analysis uses automated methods to look through a page for malicious features without analyzing them; this can be useful for triage and prioritization, as it has a high throughput but lacks some of the detail inherent in a manual analysis. _Low-interaction classification_ describes the use of tools like PhantomJS and webkits, and _high-interaction classification_ describes classifying URLs in a full OS and real browser, in an attempt to mimic a specific execution environment as closely as possible. Occasionally, web-based malware can be webkit-aware, and change its behavior if it detects that it is being evaluated by a tool like PhantomJS.
+
+_Host/Lexical classification_ involves classifying a URL without knowledge of its content - that is, by analyzing the hostname, associated IP addresses, email hosts, domain age, and so forth. There are effectively an endless number of URLs to classify, and a classifier that investigates the content of each website it visits will be considerably slower than a classifier that is able to work simply based on lexical components. This can be accomplished through human-authored rules and machine learning techniques, operating in unison. 
+
+As we would be writing our own classifiers at the end of the session, Mr. Cochin included a quick list of typical good and bad indicators. 
+
+Good signs include:
+
+- A "www." prefix, which signals a more legitimate domain.
+- Shorter URLs, which a typically more expensive, especially for .com TLDs - attackers don't often spring for more expensive URLs.
+- Older domains - malware is very transient, and so a website that has been active for a long time is far less likely to be suspicious.
+
+Bad signs include:
+
+- Dashes, underscores, or other non-alphabetical characters in URLs; these do not typically appear in legitimate URLs, and can be signs of the "rnicrosoft" trickery discussed above.
+- No MX (mail) record, indicating that no email server exists. Legitimate URLs often include email servers, and those hosting malicious websites often don't go to the trouble of creating one.
+- Young domains - if a domain is very young, it is more likely to be hosting malware. 
+- Long domain names. An overly-long, complicated domain name is often suspicious. 
+
+We wouldn't cover them in our lab, but Mr. Cochin also covered newer URL classification techniques such as _graph-based classification_, in which networks of malicious URLs can be linked in a DAG stored in a database.
+
+This concluded Week 7. Next week, we'll cover Messaging Security.
+
+[xkcd]: https://xkcd.com/327/
+
