@@ -80,38 +80,38 @@ I followed along with Lab 1, which asked us to find information contained in the
 
 First, we needed to provide how many .zip, .rar, .xlsx, .docx, .pdf, and .exe files there were in message_data. To accomplish this, I used queries of the form `SELECT attachment_name FROM message_data WHERE attachment_name ~* '.zip$';`, where `zip` was replaced with each of the file extensions listed above. The regular expression here scanned for any number of non-'.' characters, matching all entries having the supplied file extension at the end of the string. This produced the following results:
 
-.zip: 150
-.rar: 6
-.exe: 1
-.docx: 653
-.xlsx: 530
-.pdf: 5410
+- .zip: 150
+- .rar: 6
+- .exe: 1
+- .docx: 653
+- .xlsx: 530
+- .pdf: 5410
 
 So, we can see that PDF files are the most common of those searched for in message_data; this makes a certain amount of sense, as attached PDFs are commonly used to embed malware used in phishing attacks.
 
 Next, we needed to provide the total number of source IP addresses, subjects, attachments, and URLs. To accomplish this, I used queries like `SELECT COUNT(source_ip) FROM message_data`
 
-Source IPs: 99986
-Subjects: 100000
-Attachments: 100000
-URLs: 96877
+- Source IPs: 99986
+- Subjects: 100000
+- Attachments: 100000
+- URLs: 96877
 
 It appears that some url fields are NULL, as well as some source_ip fields.
 
 Similarly, we needed to provide the number of _distinct_ source IP addresses, subjects, from_domains, attachments, and URLs. Here, I used a SQL DISTINCT statement to remove duplicates from the returned data, with queries such as `SELECT COUNT(DISTINCT(source_ip)) FROM message_data;`. 
 
-Source IPs: 25745
-From Domains: 22994
-Subjects: 16636
-Attachments: 15785
-URLs: 88146
+- Source IPs: 25745
+- From Domains: 22994
+- Subjects: 16636
+- Attachments: 15785
+- URLs: 88146
 
 To determine the number of attachments, I used the attachment_hash rather than the attachment_name field, as otherwise identical attachments could be named differently. From the results above, it is clear that many characteristics are repeated between distinct messages; this is good for classification, as we can potentially find common characteristics consistent with ham or spam.
 
 We were also asked to provide the average message size and subject length; this was accomplished with `SELECT AVG(message_size) FROM message_data` and `SELECT AVG(length(msubject)) FROM message_data;`.
 
-Average Message Size: 187560.16
-Average Subject Length: 27.70
+- Average Message Size: 187560.16
+- Average Subject Length: 27.70
 
 Finally, we were asked to provide the most common file extension in each URL. This was a somewhat complex query, and it required a more detailed regular expression to match potential file extension types. 
 
