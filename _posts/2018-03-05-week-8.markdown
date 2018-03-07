@@ -7,7 +7,7 @@ categories: dada
 
 ## Introduction
 
-We delved a bit deeper into the Application layer of the OSI network stack, investigating messaging (that is, email) security with Eric Peterson, a research manager at McAfee. Mr. Peterson provided an overview of email security terms, technologies, and tools, guiding the discussion with detailed, real-world examples. We ended this week's sessions with a classification lab, in which we used our newly-developed email security knowledge to categorize a database of email as "ham" (benign) or "spam" (unwanted or malicious). 
+We delved a bit deeper into the Application layer of the network stack, investigating messaging (that is, email) security with Eric Peterson, a research manager at McAfee. Mr. Peterson provided an overview of email security terms, technologies, and tools, guiding the discussion with detailed, real-world examples. We ended this week's sessions with a classification lab, in which we used our newly-developed email security knowledge to categorize a database of email as "ham" (benign) or "spam" (unwanted or malicious). 
 
 ## Session 1: Terminology, History, and Tools
 
@@ -60,7 +60,7 @@ In my case, I used the following regular expression, which matched properly:
     <figcaption>Regular expression matching</figcaption>
 </figure>
 
-This essentially uses a series conditions for each letter, looking for 0 or 1 space between each of the letters with `{0,1}`. An OR conditional is used for the first pair of characters, allowing the expression to match either `v `, `\/i`, or `v|`, but not `vi`. The remaining characters are matched using brackets (`[ ]`), which search for any character contained within them. The screenshot above is from a web app similar to Regex Coach called [regexr][regexr]; results hightlighted in blue are matches.
+This essentially uses a series conditions for each letter, looking for 0 or 1 space between each of the letters with `{0,1}`. An OR conditional is used for the first pair of characters, allowing the expression to match either `v `, `\/i`, or `v|`, but not `vi`. The remaining characters are matched using brackets (`[ ]`), which search for any character contained within them. The screenshot above is from a web app similar to Regex Coach called [regexr][regexr]; results highlighted in blue are matches.
 
 ### Managing the Flood of Data
 
