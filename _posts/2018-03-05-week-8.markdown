@@ -1,0 +1,182 @@
+---
+layout: post 
+title:  "Week 8"
+date:   2018-03-05 17:00:00 -0500
+categories: dada 
+---
+
+## Introduction
+
+We delved a bit deeper into the Application layer of the OSI network stack, investigating messaging (that is, email) security with Eric Peterson, a research manager at McAfee. Mr. Peterson provided an overview of email security terms, technologies, and tools, guiding the discussion with detailed, real-world examples. We ended this week's sessions with a classification lab, in which we used our newly-developed email security knowledge to categorize a database of email as "ham" (benign) or "spam" (unwanted or malicious). 
+
+## Session 1: Terminology, History, and Tools
+
+We began the first session with a quick quiz, in which the class as a whole attempted to classify a series of email as malicious (i.e., phishing attempts) or benign. A few of these emails contained obvious signs of phishing, such as poorly-written copy in combination with file attachments, but many were somewhat ambiguous, meriting extended discussion. As part of these discussions, Mr. Peterson revealed a few generally-accurate email classification rules. Chief among these is the fact that phishing emails commonly include some form of a "call to action" to the recipient, such as a request to confirm a username, login to a bank account, or download a file; this is the typical vector used by attackers to get an email recipient to download malware or access a malicious website. Emails that ask for the user to complete some specific task should be treated with extreme caution, especially when completing that task requires sharing personal information. Mr. Peterson also took care to mention that, in classifying emails, a "false positive" - undetected malicious email - is considered more acceptable than a "false negative" - a benign email mistakenly classified as malicious. Overly-aggressive classification models could, for instance, interfere with a customer's business interactions, causing financial harm. Consider a model that treated _any_ attached PDF as suspicious; while it is true that many phishing emails include malware masquerading as an attached PDF, it is not the case that _every_ email with an attached PDF has malicious intent. Customers expect to be able to attach files to emails without issue, and although an aggressive classification model could prevent more spam or phishing emails from reaching the customer, it might interfere with a customer's legitimate email traffic in doing so. 
+
+Mr. Peterson noted that human resources departments are the most likely to be phished successfully. As human resources employees often have access to a significant amount of employee personal information, a successful phish can yield far greater dividends than it might for a less-connected employee. In this case, even a seemingly insignificant overall success rate could prove fruitful, as just one success might reveal the personal information of hundreds (or thousands) of targets. 
+
+### Terminology
+
+As in previous weeks, much of the first session was spent introducing technical terms relevant to messaging security. First among these was the concept of _spam_; this has become a ubiquitous term over the last twenty years or so, but it was specifically defined here as "unwanted and possibly malicious email". This week's classes would focus on practices at the malicious end of the spam spectrum, such as phishing. Benign email is often called _ham_. 
+
+A _spamtrap_ or _honeypot_ is a system used to lure spam email; in turn, it collects data on spam itself. Mr. Peterson mentioned that email providers often keep canceled email addresses active for a period of months after account termination, and use those addresses to collect spam. After 6 months of "hard bounces" (500-class responses), mail that continues to be sent to that email address is most likely spam.
+
+A _botnet_ is a series of machines that have been commandeered to perform a task that the user does not support. We've discussed these before in CS373, but they are a common element of many large-scale spam attacks, so much so that some of the most prevalent are given nicknames by researchers.
+
+In years past, spammers would typically just use infected machines to send as much spam as possible before being detected. These days, much more sophisticated methods are in use. _Snowshoe spam_ is a term given to one such method, a spam attack that "distributes its weight" across many IP addresses as a means of hiding itself amongst normal Internet traffic. Typically, this spamming method involves quickly switching through a number of different IP addresses as well, making it difficult to pin down or isolate the IP addresses at the source of a spam attack. 
+
+_Phishing_ has been discussed before, but _spear phishing_ is a new concept: it describes a far more targeted form of phishing intended for a specific individual. This could be useful in APT-style attacks, for instance. Phishing is a well-known attack method, and is at least superficially understood by many Internet users. It remains, however, the leading infection vector. Payouts can be immense - given sufficient email volume, attackers are still able to make a lot of money even with very basic phishing schemes.
+
+_RBL_ is an acronym for Real-Time Black Hole List, a form of blacklist used in messaging security. A receiving email host checks a sending IP address against a list of confirmed phishing addresses, and drops the connection if a match is found. Spamhaus is perhaps the most popular RBL provider, but there are many companies that provide similar services.
+
+A _Heuristic_ is a method or strategy that produces generally accurate - but not perfect - results. In terms of message security, heuristics are employed as string or pattern-matching rules used to detect spam, similar to the _yara_ signatures that we wrote earlier in this course. The simplest form of heuristic in message security is a basic string match: looking for "Pills" in an email subject line, for instance. More complex heuristics use regular expressions or other pattern-matching techniques, achieving a greater degree of accuracy at the cost of some increase in complexity. _Meta-rules_ look more deeply into the content of a message, and can involve matching across multiple patterns or strings. Generally, there are two primary methods for developing heuristics: finding a heuristic that detects a specific spam sample as quickly as possible, or finding a generic rule that detects slight variations in that sample. The latter is considered more optimal, even if it takes more time - spam can easily be rewritten to bypass simple or hastily-constructed string-based filters.
+
+_Bayesian Filtering_ is a statistical method involving tokenizing a "corpus" of messages into a training set, and developing rules for determining "hamminess" or "spamminess" based on properties of that training set. If, for instance, 90,000 out of 100,000 spam messages in the training set contain a similar pattern of characters, a rule could be written that flags all messages displaying the same pattern as possible spam. In this way, spam can be "filtered" out of a mail recipient's inbox.
+
+### History
+
+Mr. Peterson continued with a brief discussion of the history of spam and phishing. _419 Phishing_ is a term referencing section 419 of the International Phone Code, which specifically prohibits this form of fraud. These are the infamous "Nigerian prince" scams, in which the recipient is promised a large sum of money in return for some small contribution - money required to unlock a trust fund, for instance. The scams themselves have varying degrees of believability; some low-effort scams are easily recognized, but others can include intricately-crafted, seemingly-credible information that confuse even spam-savvy recipients. 
+
+_Canadian Pharmacy_ spam refers to the ubiquitous spam email offering cheap pills. Mr. Peterson showed us a specific example involving letters embedded in HTML _span_ tags; this is almost certainly an attempt to get around heuristics searching for specific strings. More sophisticated attacks involve a credible-looking website, with images, ordering or shopping cart systems, and so forth. This makes a phishing attack more believable, and thus increases its success rate. 
+
+_Pump and Dump_ refers to the process of inflating a stock's value through the use of spam, coaxing recipients to buy stocks using false "insider" tips and so forth. Once a stock's value has rise, spammers sell quickly, reaping a profit before the stock's value drops again.
+
+As discussed above, _botnets_ are a big part of most spamming attacks. These became especially prevalent in 2009 with the Rustock botnet; investigators found a highly commoditized system with rankings, templates, and huge profits available to the top users. Once Rustock was finally destroyed, its users "seeded" future hosts with malware delivered through spam, laying the foundation for future botnets such as Kelihos in 2013. 
+
+### Technology and Tools
+
+Email classification engines tend to fall into two categories: those that are reputation-driven, and those that are content-driven. _Reputation engines_ classify based on the observed behavior of an IP address, message, or URL. _Content-driven_ engines look for attributes in each message, such as strings, text patterns, or combinations thereof. Our lab work this week would focus on a content-driven classification engine.
+
+Useful tools for email classification include common Linux tools like _dig_, _whois_, _grep_, _sed_, and _awk, and open-source databases like PostgreSQL and MySQL. Regular expressions can be very useful for identifying key data patterns, and websites like [trustedsource][trustedsource.org] or [spamhaus][spamhaus.org] can serve as storehouses of reputation data, especially in North America. 
+
+### Regex Lab
+
+To give us a bit of practice with regular expressions, Mr. Peterson walked the class through an example pattern-matching exercise. In this case, we were tasked with creating a regular expression that would capture the strings "v \| a g r a", "\/iaGrA", and "v\|4gra", but _not "viagra"; these patterns imitated the sort of text obfuscation that a content-driven email classification engine might be programmed to find. 
+
+In my case, I used the following regular expression, which matched properly:
+
+<figure>
+    <img src="/assets/img/week8/wk8_regex.png">
+    <figcaption>Regular expression matching</figcaption>
+</figure>
+
+This essentially uses a series conditions for each letter, looking for 0 or 1 space between each of the letters with `{0,1}`. An OR conditional is used for the first pair of characters, allowing the expression to match either `v `, `\/i`, or `v|`, but not `vi`. The remaining characters are matched using brackets (`[ ]`), which search for any character contained within them. 
+
+### Managing the Flood of Data
+
+As the number of emails handles by a classification system increases, so do accuracy requirements. If only 1% of one billion spam messages are missed, for instance, 10^9 * .01 = 10^7 = 10,000,000 of these messages reach their destination without issue. Typical accuracy targets exceed 99.5%. 
+
+To process such a massive amount of data, researchers use _parsing_, _grouping_, and _aggregation_. Parsing involves extraction of key metadata - source IP, subject, sender, HELO, and so forth. Grouping involves dividing the flow of data based on common factors: say, the same source IP address or subject. Aggregation involves the consideration of values over time; a COUNT DISTINCT SQL query is one such example. This process exposes paths that allow researchers to understand trends in a group of messages more clearly. 
+
+Researchers also look for outliers in building classification engines, attempting to cover edge cases that cause similar messages to be classified differently. By finding such cases, researchers can gain more insight into the essential characteristics of a particular sample of spam messages. 
+
+In building out a classification strategy, researchers need to consider a number of factors, including the amount of human input required. A room full of humans tasked with classifying emails doesn't scale well, and this sort of repetitive work can lead to poor quality assurance. A fully-automated system, however, might require a prohibitive amount of money or time to develop. Many classification systems involve some form of semi-supervised or machine learning, combining automation and human input.
+
+Classification engines can use probability scoring or additive scoring. The former is very black-and-white: emails are either malicious, or not. The latter involves a system in which points are added for suspicious characteristics; once a message crosses a specific point threshold, it is treated as spam. An additive scoring system allows for more of a "grey area" in identifying spam, and as such can generally be more versatile. 
+
+### Lab 1: Looking Through the Database
+
+I followed along with Lab 1, which asked us to find information contained in the `message_data` PostgreSQL database table provided in our Linux VMs. 
+
+First, we needed to provide how many .zip, .rar, .xlsx, .docx, .pdf, and .exe files there were in message_data. To accomplish this, I used queries of the form `SELECT attachment_name FROM message_data WHERE attachment_name ~* '.zip$';`, where `zip` was replaced with each of the file extensions listed above. The regular expression here scanned for any number of non-'.' characters, matching all entries having the supplied file extension at the end of the string. This produced the following results:
+
+.zip: 150
+.rar: 6
+.exe: 1
+.docx: 653
+.xlsx: 530
+.pdf: 5410
+
+So, we can see that PDF files are the most common of those searched for in message_data; this makes a certain amount of sense, as attached PDFs are commonly used to embed malware used in phishing attacks.
+
+Next, we needed to provide the total number of source IP addresses, subjects, attachments, and URLs. To accomplish this, I used queries like `SELECT COUNT(source_ip) FROM message_data`
+
+Source IPs: 99986
+Subjects: 100000
+Attachments: 100000
+URLs: 96877
+
+It appears that some url fields are NULL, as well as some source_ip fields.
+
+Similarly, we needed to provide the number of _distinct_ source IP addresses, subjects, from_domains, attachments, and URLs. Here, I used a SQL DISTINCT statement to remove duplicates from the returned data, with queries such as `SELECT COUNT(DISTINCT(source_ip)) FROM message_data;`. 
+
+Source IPs: 25745
+From Domains: 22994
+Subjects: 16636
+Attachments: 15785
+URLs: 88146
+
+To determine the number of attachments, I used the attachment_hash rather than the attachment_name field, as otherwise identical attachments could be named differently. From the results above, it is clear that many characteristics are repeated between distinct messages; this is good for classification, as we can potentially find common characteristics consistent with ham or spam.
+
+We were also asked to provide the average message size and subject length; this was accomplished with `SELECT AVG(message_size) FROM message_data` and `SELECT AVG(length(msubject)) FROM message_data;`.
+
+Average Message Size: 187560.16
+Average Subject Length: 27.70
+
+Finally, we were asked to provide the most common file extension in each URL. This was a somewhat complex query, and it required a more detailed regular expression to match potential file extension types. 
+
+My query was as follows:
+
+```
+WITH exts as 
+(SELECT substring(lower(url), '\/\w+(\.w{3,4})(?=\?|$)') as file FROM message_data 
+	WHERE substring(lower(url), '\/\w+(\.w{3,4})(?=\?|$)') IS NOT NULL)
+SELECT exts.file, count(exts.file) FROM exts 
+GROUP BY exts.file 
+ORDER BY 2 desc;
+```
+
+The inner SELECT statement here finds substrings matching the typical format for a file extension: a three or four-character sequence following a '.' character; in a URL, this extension could appear before a query string (as in a GET query), or at the end of the URL - in either case, it will appear following a "/" character and some amount of text, denoting the directory and/or filename associated with that extension. As such, the regular expression uses a "positive lookahead" statement to ensure that the matched pattern was located at one of these two positions in each string. 
+
+This regular expression wasn't perfect - it occasionally matches some TLDs like .com, for instance - but it seemed to do well-enough to produce reasonable results, once these TLDs were ignored. The most common file extension, by far, was ".php", with 1042 matching entries:
+
+<figure>
+    <img src="/assets/img/week8/url_extensions.png">
+    <figcaption>Results of SQL query for most prevalent URL file extension</figcaption>
+</figure>
+
+## Session 2: Lecture Wrap-Up
+
+Session 2 was a bit shorter, touching on a few lingering lecture topics before proceeding to the week's final lab.
+
+Mr. Peterson started by showing us a basic SMTP conversation, identifying the _helo_, _mail from:_, _rcpt to:_, and _data_ fields; he was careful to note that, in SMTP, the _mail from:_ field does not necessarily need to match the actual email address of the sender; this allows spammers to hide or obfuscate the actual email address from which a message was sent. We observed an SMTP conversation for a ham message that was accepted by an SMTP server with a `250 2.0.0 OK`, and a conversation for a spam message that was rejected with a `554 Denied`. He next showed us a sample email header, demonstrating how important and valuable information could be extracted from it.
+
+Before our classification lab, Mr. Peterson presented a final pair of ham and spam examples, showing how a classification engine might extract key phrases or terms. The first was a spam message, which contained a number of suspicious properties: the "to" field was empty, and a link embedded in the email directed the recipient to a Russian domain with a .php file extension. There message also contained suspect phrases like "Oprah had been using it for over a year!". The second was a ham message representing a typical mailing-list email; it contained heavy formatting, embedded images, an "unsubscribe" button, no raw URLs, and a reasonable or benign-seeming subject line. 
+
+Mr. Peterson also discussed the fact that these qualities could be arranged in a "star graph" that plotted their relative strengths along lines radiating out from an origin point; by connecting these plotted points, a holistic graphical representation of the email could be developed. A classification engine might use a similar (albeit less graphical) method to determine the potential "spamminess" of a particular message. 
+
+In closing, Mr. Peterson related the process of identifying and classifying spam to the scientific method: each involves an iterative process of creating a hypothesis, rigorously testing it, and refining it based on those tests. A good message security researcher can use the information generated by this experimental process to develop extremely accurate classification rules.  
+
+### Classification Lab
+
+I decided to take a stab at the email classification lab presented at the end of Mr. Peterson's lectures. 
+
+I began by using a few basic queries to find common traits in suspicious or potentially-spammy messages.
+
+Searching for suspicious subject lines, I found a few oft-repeated phrases like "Our New Stock Pick!" and "Todas las Ofertas en un solo lugar!!!". The former (isolated with `SELECT msubject, attachment_name, attachment_hash FROM message_data WHERE ~* 'Our New Stock Pick!';`) was almost certainly spam, as each of these messages contained an attached .gif with a nonsensical name. The content of the message was also reminiscent of the "pump and dump" strategy discussed in the lectures. Interestingly, browsing through the messages that matched this regular expression yielded a number of subjects that specifically included a "[SPAM]" string in the subject line, possibly a result of another program's classification efforts.
+
+A further query yielded the fact that there were only three distinct attachment hashes among these matches, but 57251 distinct attachment names - this behavior is also consistent with the obfuscation behavior representative of a spam attack. 
+
+That noted, however, classifying _any_ email with an attachment and a subject line like "Our New Stock Pick!" seemed harsh; instead, I looked for all entries with attachments having hashes matching the hash in the matches containing the aforementioned "[SPAM]" tags:
+
+`SELECT DISTINCT(attachment_name) FROM message_data WHERE msubject ~* '\[SPAM\] our new stock pick';`
+
+Within each matching record, is_spam was set with:
+
+`UPDATE message_data set is_spam = '1' WHERE attachment_hash in ('dba6d2d0522c7417927c6c39fd7d0600')`
+
+Investigating emails with the spammy subject line "Todas las Ofertas en un solo lugar!!!", I found that each contained an attachment with the same hash and name; using a query to find all matching entries having that attachment hash, I found that _only_ the 40 emails with the "Todas..." subject line contained attachment with this hash. Not a large number of matches, but these are almost certainly spam. The database was updated with:
+
+`UPDATE message_data set is_spam = '1' WHERE attachment_hash in ('d4625aefa6a05798716f185fab4a6a7d');`
+
+Checking for the number of messages detected as spam thus far, I found that 85000 out of 100000 were currently marked as such; this seemed a bit high - perhaps my first UPDATE query was a little overly-aggressive. 
+
+Investigating further, I found that these 85000 entries in the message_data table had been classified as spam before my own involvement; this was confirmed by reverting to a prior snapshot and querying for non-NULL entries in the is_spam field. Scanning through the pre-classified emails, I found those with is_spam set to 0 to have more credible characteristics: more believable subject lines, attachments with proper names, and so forth. Those with is_spam set to 1 were much more suspect: many calls to action (such as "Our New Stock Pick!"), and many nonsensically-named attachments. I found this a little confusing - my understanding was that we were performing this classification ourselves - although the practice was valuable.
+
+Unfortunately, this marked the end of my involvement with Week 8. With more time, I would clear the is_spam field and start over, probably looking more deeply for patterns in source IP addresses and HELO domains.
+
+Next week's material marks the last module in the class: Mobile Security.
+
+[trustedsource]: trustedsource.org
+[spamhaus]: spamhaus.org
+
