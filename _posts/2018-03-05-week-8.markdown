@@ -47,7 +47,7 @@ As discussed above, _botnets_ are a big part of most spamming attacks. These bec
 
 Email classification engines tend to fall into two categories: those that are reputation-driven, and those that are content-driven. _Reputation engines_ classify based on the observed behavior of an IP address, message, or URL. _Content-driven_ engines look for attributes in each message, such as strings, text patterns, or combinations thereof. Our lab work this week would focus on a content-driven classification engine.
 
-Useful tools for email classification include common Linux tools like _dig_, _whois_, _grep_, _sed_, and _awk, and open-source databases like PostgreSQL and MySQL. Regular expressions can be very useful for identifying key data patterns, and websites like [trustedsource][trustedsource.org] or [spamhaus][spamhaus.org] can serve as storehouses of reputation data, especially in North America. 
+Useful tools for email classification include common Linux tools like _dig_, _whois_, _grep_, _sed_, and _awk, and open-source databases like PostgreSQL and MySQL. Regular expressions can be very useful for identifying key data patterns, and websites like [Trustedsource][trustedsource] or [Spamhaus][spamhaus] can serve as storehouses of reputation data, especially in North America. 
 
 ### Regex Lab
 
@@ -60,7 +60,7 @@ In my case, I used the following regular expression, which matched properly:
     <figcaption>Regular expression matching</figcaption>
 </figure>
 
-This essentially uses a series conditions for each letter, looking for 0 or 1 space between each of the letters with `{0,1}`. An OR conditional is used for the first pair of characters, allowing the expression to match either `v `, `\/i`, or `v|`, but not `vi`. The remaining characters are matched using brackets (`[ ]`), which search for any character contained within them. 
+This essentially uses a series conditions for each letter, looking for 0 or 1 space between each of the letters with `{0,1}`. An OR conditional is used for the first pair of characters, allowing the expression to match either `v `, `\/i`, or `v|`, but not `vi`. The remaining characters are matched using brackets (`[ ]`), which search for any character contained within them. The screenshot above is from a web app similar to Regex Coach called [regexr][regexr]; results hightlighted in blue are matches.
 
 ### Managing the Flood of Data
 
@@ -177,6 +177,7 @@ Unfortunately, this marked the end of my involvement with Week 8. With more time
 
 Next week's material marks the last module in the class: Mobile Security.
 
-[trustedsource]: trustedsource.org
-[spamhaus]: spamhaus.org
+[trustedsource]: http://www.trustedsource.org
+[spamhaus]: http://www.spamhaus.org
+[regexr]: http://www.regexr.com
 
