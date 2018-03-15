@@ -1,0 +1,347 @@
+---
+layout: post 
+title:  "Weeks 9 and 10"
+date:   2018-03-11 17:00:00 -0500
+categories: dada 
+---
+
+## Introduction
+
+Lectures in the final two weeks of the course delved into mobile security, a topic that had been discussed briefly in prior weeks, but never in depth. Mobile devices are used very differently than PCs; as such they present a number of unique security vulnerabilities and potential attack vectors that merit specific and detailed study. Fernando Ruiz, a researcher at McAfee, led us through three sessions. 
+
+## Session 1: Mobile Networks Overview
+
+Mr. Ruiz began with an overview of mobile networks and operating systems, including a history mobile devices and mobile malware, as well as an introduction to the Android platform. We concluded this sessions with a pair of labs in which static and dynamic analysis were performed on a pair of mobile malware samples.
+
+### A History of Mobile Technology
+
+Mobile networks have been around since the early 1970s, with Motorola completing the first call with a hand-held phone in 1973. The first commercially-available cellphone in the market also came from Motorola: the DynaTAC 8000x, with 30 minutes of talk time. These calls were delivered with analog technology supporting voice only - no security infrastructure existed. In the 1990s, the development of SMS and digital transmission technologies led to creation of basic encryption methods used to prevent basic attacks. In the early 2000s, mobile technology grew to support data transfer, email, and Web browsing; today, mobile devices are essentially as capable as PCs for basic web browsing, emailing, and messaging tasks. 
+
+The development of the smartphone led to the implementation of mobile-specific operating systems such as Android, Symbian, and later Apple's iOS. Android's market share continues to grow over time, with the market share attributed to iOS devices remaining somewhat steady; Symbian and other operating systems have all but died out as companies like Palm and Blackberry lose market share. 
+
+Each of the most prevalent mobile operating systems is somewhat unique. Apple's closed-source iOS is designed to integrate with other Apple products; it is based on Mac OSX, and thus is "Unix-y", but not in the same sense as Android. Updates are delivered over-the-air since iOS 5, with users being able to update their devices without attaching them to a host PC or laptop. Windows Phone OS is similar - it's also closed source, and also seeks to fully integrate with proprietary Microsoft products. Android, acquired in 2007 by Google, is mostly open-source, save for proprietary Google content. As such, many different manufactures produce devices that provide some form of the Android operating system. This has led to an issue known as "fragmentation", in which many carriers provide specific versions of operating systems, and deliver updates in different ways. A security vulnerability, then, can persist for much longer than it might on a more unified family of devices that all share the same version of an operating system - it can take a long time for fixes to propagate to every manufacturer or carrier. 
+
+For each of these operating systems, applications are provided through an officially-sanctioned "App Store" or "Marketplace". Android uses an automated system to vet applications that are submitted to its app marketplace; applications that display suspicious behavior are automatically removed. Marketplaces for the iOS and Windows Phone use some form of manual analysis, although the specific review process is not known.
+
+Most mobile operating systems are configured to prevent the owner from obtaining root access, although this can be circumvented with various "jailbreaking" exploits that bypass these restrictions. This can un-tether carrier restrictions associated with a particular device, but can also allow for execution of privileged operations that a user might not typically be able to accomplish. These exploits are not solely used for illegitimate purposes - a user might simply wish to uninstall pre-installed applications, for instance. However, rooting exploits can also be used to allow malicious applications to perform malicious actions without the user's knowledge or consent. Early examples of these exploits on Android smartphones include RageAgainstTheCage (Android 2.2) and Gingerbreak (Android 2.3).
+
+### Mobile Malware Genesis
+
+Malware targeted at mobile devices began to appear in the early 2000s, although these primitive examples were more annoyances than actual threats - as an example, the _Cabir_ malware simply consumed a device's battery at quicker rate. As these devices became more popular and more platforms appeared, more sophisticated and malicious malware followed, although there was some degree of "lag"; in an era Mr. Ruiz described as "the calm before the storm", this explosion in popularity was not immediately accompanied by a sharp rise in known malware.  
+
+The first known mobile botnet was the Symbian worm _YXES_, detected in 2009. It disabled UI dialogs, allowing it to communicate without user notification, and sent the malware version and phone model to a remote server, which either confirmed the installation or sent another more appropriate version of the YXES malware. The malware itself exported the user's contacts, sending them to a remote server, killing system apps to avoid detection. 
+
+The first Android malware found in the wild was known as _FakePlayer_, which pretended to be a media player app. This is known as an _SMS Trojan_, in that it sends SMS messages containing private user data to premium-rate numbers. 
+
+2011-2012 marked the "Android Malware Revolution", a time in which the number of malware variants found in the wild sharply increased. _Geinimi_, the first Android botnet, was found during this time in Chinese 3rd-party markets. It also holds the distinction of being the first known example of "repackaged" Android malware - malware that wraps a "benign" application to appear safe and legitimate. Geinimi leaks sensitive information to a remote server, such as the target device's location, a list of installed apps, and so forth. It can download additional binary files used to install applications, and prompt the user to uninstall specific apps. Additionally, it responds to specific command-and-control messages sent from a central server. 
+
+The _DroidDream_ malware was the first found in the Android marketplace, and introduced the use of publicly-known exploits to gain root privileges. These privileges were used to install APKs (_Android Packages_, the Android package file format) in system partitions, which then downloaded additional malicious applications. As a reaction to _DroidDream_, Google instituted a remote killswitch via the Android Market Security Tool; known-malicious applications were automatically removed from installed devices, and exploits were patched. In response, however, malware authors took advantage of this, repackaging the Android Market Security Tool itself with malicious software.
+
+### Android Fundamentals
+
+Our study of mobile security was focused on Android platforms, and so we continued with a brief discussion of Android fundamentals.
+
+Android is based on the Linux kernel, and as such it shares many similarities with the familiar Linux desktop operating systems. As Android is intended for mobile devices, however, it differs in a few very significant ways. The architecture is based on a "sandboxing model", in which inter-process communication is highly limited. Prior to Android 4.4, applications were executed in Dalvik, a virtual machine that executes Android applications. Newer versions of Android (5.0 and above) exclusively use the Android Runtime (ART). With Dalvik, Java .class files are converted into Dalvik-executable .dex files with a tool called _dx_; these .dex files are then executed in the VM. The ART features improved garbage collection and ahead-of-time compilation (as compared to Dalvik's just-in-time compilation process). 
+
+Android applications are comprised of _Activities_, _Services_, _Broadcast Receivers_, and _Content Providers_. 
+
+Activities are simply screens with a user interface, common to almost every user-space mobile application. Services are processes that run in the background without a user interface. Broadcast Receivers respond to system-wide broadcast announcements, such as Android's BOOT_COMPLETED announcement. Content Providers manage shared application data, such as a user's contacts. 
+
+Inter-Process Communication (IPC) is officially supported with limited tools like content providers and intents (specifically-designed asynchronous messages to be shared between Android applications). The aforementioned BOOT_COMPLETED is one such intent. Unofficially, Unix-style IPC such as signals, pipes, and sockets can be implemented, but these are difficult to manage given that each app is running in its own VM. 
+
+Android applications may request any of 146 distinct permissions, or can create custom permissions.
+
+An _Android Manifest_ can be found bundled with all Android applications in the AndroidManifest.xml file located inside of the APK. This file can be very useful for a malware analyst, as it contains all permissions required by an application, its minimum API level, application components, hardware and software features, and other important features.
+
+### Lab 1: Static Analysis
+
+Our first lab involved static analysis of the _RU_ malware. Mr. Ruiz noted that a quick check of the APK's hash against the VirusTotal database is excellent first step - if this sample is known, such a search will provide time-saving summary details from previous analyses. 
+
+Investigation of the manifest revealed `android.permission.SEND_SMS` permissions, a clue for the malware's intent:
+
+<figure>
+    <img src="/assets/img/week9/ru_static/ru_manifest.png">
+    <figcaption>RU Manifest</figcaption>
+</figure>
+
+The RU.apk file was decompiled to produce .smali code, an Assembly language-like human-readable form of the .dex files; a sort of "middle point" between .dex and Java source code. Although this code is human-readable, it is very low-level, meaning that it can be difficult or time-consuming to decipher the overall intent of the malware. I could, however, observe SMS-related API calls:
+
+<figure>
+    <img src="/assets/img/week9/ru_static/smali_sendSMS.png">
+    <figcaption>RU - SMS-related functions in .smali code</figcaption>
+</figure>
+
+Fortunately, I could also decompile to Java code as well with the `jd-gui` tool, which provided a much clearer picture of the malware's activity. Digging through the decompiled Java, a try/catch block involving an SMS message could be viewed as well:
+
+<figure>
+    <img src="/assets/img/week9/ru_static/ru_sendsms.png">
+    <figcaption>RU - SMS-related functions in decompiled Java code</figcaption>
+</figure>
+
+Here, I observed that the malware is sending three SMS messages to premium-grade numbers, presumably containing system information or user data.
+
+This is a very basic application; few malware samples are as simple as this one - but it served as a useful introduction to the unique tools and techniques necessary for mobile malware analysis.
+
+### Lab 1: Dynamic Analysis
+
+I next performed a basic dynamic analysis on the _WalkTxt.apk_ malware. Here, I used a pair of emulated smartphones, observing the behavior of the malware as it executed. 
+
+Within Eclipse, I started an emulator, selecting a Nexus S equipped with Android 5.0. Once the emulator had booted, I added a contact (number 5554):
+
+<figure>
+    <img src="/assets/img/week9/walktxt_dynamic/dyn_contact.png">
+    <figcaption>WalkTxt - adding contact</figcaption>
+</figure>
+
+Next, using the _adt_ tool, I installed the WalkTxt.apk malware on the emulated device. Browsing through the list of apps, I observed that the malware had been installed:
+
+<figure>
+    <img src="/assets/img/week9/walktxt_dynamic/walktxt_installed.png">
+    <figcaption>WalkTxt - malware installed</figcaption>
+</figure>
+
+Now, I returned to Eclipse, starting a second emulator (with number 5556). After its boot completed, I switched to emulator 5554, and opened the "Walk & Text" application (really, the malware under analysis). Within the 5556 emulator, the following text message was received from 5554:
+
+<figure>
+    <img src="/assets/img/week9/walktxt_dynamic/walktxt_notification.png">
+    <figcaption>WalkTxt - message received</figcaption>
+</figure>
+
+<figure>
+    <img src="/assets/img/week9/walktxt_dynamic/walktxt-gotem.png">
+    <figcaption>WalkTxt - message contents</figcaption>
+</figure>
+
+So, the Walk & Text application was reading from its host's contacts, and sending a message to those contacts once the app was activated. This application is a bit less malicious than others we would study, but displayed many of the traits found in more serious malware - the ability to gain root access and perform activities without a user's consent or knowledge.
+
+## Session 2: Native Payload and Banking Trojans
+
+Mr. Ruiz began the second session with a review of Android fundamentals from Session 1. Next, we looked a little more closely into Android exploits, specifically _Exploid_ and _RageAgainstTheCage_. These were two early "rooting" exploits used to allow malware to gain root access on a target's device. Exploid appeared around 2009, and takes advantage of the fact that udev does not verify (in fact, it assumes) that a _uevent_ comes from the kernel. Thus, a _uevent_ could be created by turning the device's Wifi on and off, which could in turn cause the kernel to set the _setuid_ bit; Exploid could then be loaded and run with root access. 
+
+[RageAgainstTheCage][ratc] (a.k.a. "RATC", or the "adb setuid exhaustion attack") uses a different method that exploits a race condition. Essentially, up to RLIMIT_NPROC processes are forked for a process owned by RATC; then, RATC kills _adbd_ (the adb daemon), causing adb to restart it. On restart, _adb_ must first perform a series of tasks as root; if RATC spawns another process at the same time, NPROC_RLIMIT is reached, causing adb's subsequent call to _setuid_ to fail, in turn preventing privilege de-escalation from root. 
+
+Other exploits include _Towelroot_, a much more complex piece of software that allows a local user to gain ring 0 control over a device via a _futex_ system call. This is not well understood by malware researchers, but is used by a number of malware authors. 
+
+These exploits are especially potent due to the aforementioned fragmentation problem: there are many different versions of Android to patch for each exploit, so it can take time to neutralize even a publicly-known exploit.
+
+### Native Payload Analysis
+
+Native ELF (or, Executable and Linkable Format) binaries can be hidden in the APK directories themselves, masking the behavior of a malicious application. What may outwardly appear to be a common or popular application might instead be a simple wrapper for something dangerous. Common practice is to hide these files in the assets folder using bogus extensions - .jpg, for instance; regardless of the extension, these files will be loaded by the parent software as libraries, or executed via shell commands. More advanced attacks involve files that have been partitioned such that an executable binary is in fact embedded in a "real" .jpg or .gif file; the parent malware is written such that it can find and copy the embedded ELF content into a separate file. These files can also be encrypted, significantly complicating static analysis. This behavior has been observed in the _Foncy_ malware.
+
+Static analysis of native payloads can be achieved through use of an ARM-specific disassembler or decompiler, or via more feature-rich tools like IDA Pro, which in its full version includes support for the Dalvik DEX format. Other professional-grade decompilers such as Hex-Rays are available, but licenses for these products tend to be expensive. 
+
+### Banking Trojans
+
+As the name might imply, _banking trojans_ are applications that mask themselves as legitimate  banking or security applications in an attempt to steal authentication factors used in banking transactions.
+
+Until recently, only one form of authentication - typically, a password - was required for online banking transactions in the United States. Recently, more banks are requiring some second form of authentication, such as entry of an emailed or text-messaged code. Although it can be simple enough for a piece of key-logging malware to steal a user's banking password from their PC, it is more difficult to steal this second authentication factor, especially when it is sent to the user via SMS. Banking Trojans are used by attackers to intercept these SMS messages, matching them with previously-stolen passwords to allow full access to a user's bank account. Samples vary in complexity; some advanced malware has the ability to gather multiple authentication factors entirely through a user's mobile device - no PC-to-mobile matching required.
+
+There are many variants of early banking trojans, although each displays a common methodology. First, a PC is infected with a malware sample that causes a fake web page to appear; this web page suggests that the user install some form of a "security application" (really, malware) for their Android device. The malware sample also includes some type of phishing apparatus that tricks the target into supplying passwords used for banking transactions. If the user then installs the suggested application on their mobile device, a mobile component of the malware is installed that intercepts SMS authentication messages sent from banking services, transmitting them to a remote server.
+
+These are complex, multi-stage attacks, and require a lot of social engineering effort to be successful; the target must be led through multiple malware installations without getting suspicious. Combining user account information with these SMS messages can be difficult, as well.
+
+Variants of these early banking trojans all share the SmsReceiver class, a Receiver that waits for an SMS event to fire. Typically, they are implemented such that when an SMS message (say, from a bank) is received, the malware executes, intercepting and forwarding that messages before the user can see it. In this way, it stays hidden on a user's device. _Zitmo_ and _Spitmo_ are examples. Zitmo avoids notice by dynamically hiding its app icon, and forwards received SMS messages to a hard-coded number (thus obviating the need for INTERNET permissions). Spitmo just manifests as a non-functional icon in the list of applications viewable by the user; really, Spitmo is operating in the background, forwarding received SMS message to a remote server via a GET request. 
+
+_FakeToken_ is a more advanced banking trojan that was discovered targeting Spanish banks in March 2012. It is unique in that it is self-contained: it pretends to be a banking application, stealing a target's password and their mTAN or second authentication factor entirely through their mobile device. Commands are executed from a remote command-and-control server. The malware has the ability to detect SMS messages sent from the target's bank, and only filter those messages; as such, it can hide itself much more effectively. Some variants are able to steal a target's contact list as well. This form of banking trojan vastly simplifies the attack itself, streamlining the process of stealing user account information.
+
+Similarly advanced banking trojans include _FakeBank_, discovered in May 2013. This malware went as far as to seek out and replace specific South Korean banking apps on a target device, using these replaced applications to phish unsuspecting users. It was delivered to the user by masquerading as the Google Play. The phishing application obtains a wide range of authentication factors from the user, including their social security number, bank account number, and so forth.
+
+### Lab 2: Static Analysis
+
+Session 2 continued with a static analysis of the _DroidDream_ malware, which uses both Exploid and RageAgainstTheCage exploits to gain root access. DroidDream also delivers a native payload once installed, in the form of zip archives and ELF binaries that have been disguised as other file types. This could be seen by extracting files from the DroidDream APK, and using the Linux _file_ command to display file type information for each of the files contained in the assets directory:
+
+<figure>
+    <img src="/assets/img/week9/day2_static/assets_types.png">
+    <figcaption>File types: not as they seem</figcaption>
+</figure>
+
+Here, I observed that sqlite.db, for instance, is certainly not a database - this appears to be a zip file instead. Extracting this archive revealed a separate application, which is highly suspicious.
+
+Returning to the DroidDream directory, I used a simple Linux _strings_ command to display the strings present in the rageagainstthecage ELF contained in the assets directory:
+
+<figure>
+    <img src="/assets/img/week9/day2_static/assets_types.png">
+    <figcaption>Strings present in rageagainstthecage ELF</figcaption>
+</figure>
+
+It is clear that this is the RageAgainstTheCage exploit - the strings describe the exact method that RATC uses to gain root access. 
+
+Using the _ghex_ hex viewer to inspect the exploid ELF, I saw that it, too contains strings that betray its intent:
+
+<figure>
+    <img src="/assets/img/week9/day2_static/exploid_hex.png">
+    <figcaption>Hex dump of exploid ELF</figcaption>
+</figure>
+
+Notice the strings on the right - per the [Linux documentation][hotplug-docs], proc/sys/kernel/hotplug is a program that notifies the user when significant events (including hardware-related events) take place. This program is used as part of the exploid rooting exploit, and thus I can be reasonably certain that this file is, in fact, an implementation of exploid.
+
+Next, I investigated the manifest contained in the DroidDream APK's main directory. I observed that the name of the app appears to be "FingerBowling" or "Bowlingtime", which suggests a fake wrapper used to deliver the malware. Services include com.android.root.AlarmReceiver and com.android.root.Settings. AlarmReceiver is typically used to allow software to react to some "alarm" or event generated by the system; it is possible that this is linked to delivery of the embedded application contained in sqlite.db.
+
+I then used the _dex2jar_ decompiler to convert DroidDream's classes.dex file into a .jar file, allowing me to observe a close approximation to the native Java source files used to create the application. Looking through the _AlarmReceiver_ class, I could see a reference to sqlite.db in the _destroy_ method:
+
+<figure>
+    <img src="/assets/img/week9/day2_static/cpFile-sqlite.png">
+    <figcaption>Reference to sqlite.db</figcaption>
+</figure>
+
+It appears that the cpFile method is being used to copy the sqlite.db directory into the project. More investigation is needed.
+
+Returning to the sqlite.db directory, I opened the manifest contained therein, and noticed a number of interesting permissions:
+
+<figure>
+    <img src="/assets/img/week9/day2_static/sqlite_perms.png">
+    <figcaption>Permissions in sqlite.db manifest</figcaption>
+</figure>
+
+I noted that the app wants access to the Internet, that it wishes to know when the device's boot is complete, and that it requires access to the device's Download Manager, and that is wishes to read the device's state. This level of permission is not appropriate for an application called "Finger Bowling" or "BowlingTime", so we can add yet another data point suggesting that sqlite.db is malicious. The manifest also references "DownloadCompleteReceiver" and an intent of android.intent.action.BOOT_COMPLETED; it appears that this application is intended to download additional applications, similar to a "dropper" in PC-based malware. 
+
+Decompiling the classes.dex file in the sqlite.db directory, I observed that the Java source was somewhat obfuscated - class and method names were given meaningless names, like "f". Browsing through the source revealed a few interesting tidbits, however. In class f, a method named "onCreate" appears to be executing a SQL query that creates a table called _apps_, possibly as a means of storing a list of installed applications:
+
+<figure>
+    <img src="/assets/img/week9/day2_static/enum_apps.png">
+    <figcaption>Enumerating installed apps in sqlite.db Java source</figcaption>
+</figure>
+
+In the DownloadManager class, methods could be observed that appear to download a file, sending an SMS message to an unknown recipient on completion.
+
+<figure>
+    <img src="/assets/img/week9/day2_static/enum_apps.png">
+    <figcaption>DownloadManager class: downloading files, sending messages?</figcaption>
+</figure>
+
+The _killall_ function located in the AlarmReceiver class did not decompile correctly, possibly as a result of intentional obfuscation on the part of the author. To investigate, I used the IDA Pro software to sift through the ARM assembly code:
+
+<figure>
+    <img src="/assets/img/week9/day2_static/ida_assembly.png">
+    <figcaption>Reading through ARM assembly</figcaption>
+</figure>
+
+Here, I observed a call to _sprintf_, which appeared to be copying a process's PID into a string to allow access to the command-line for that process (via /proc/pid/cmdline). I wasn't able to glean very much insight from the assembly in the time allotted for the lab, but it was nice to get a bit of practice with a "professional-grade" tool like IDA Pro. 
+
+### Lab 2: Dynamic Analysis of a Banking Trojan
+
+I next performed a quick dynamic analysis of a banking trojan, _seguridad_mibanco.apk_, to observe the aforementioned command-and-control behavior firsthand. Opening the emulator with number 5554 in Eclipse, we installed the provided seguridad_mibanco APK; after installing, a fairly official-looking "Secure Monitor" icon appeared in the device's list of apps:
+
+<figure>
+    <img src="/assets/img/week9/day2_dyn/banking_trojan.png">
+    <figcaption>Secure Monitor, hiding in plain sight</figcaption>
+</figure>
+
+Using the emulated device with number 5556, I could send control messages via SMS to device 5554: sending "/00005556", followed by a message like "mTAN: 12345" caused device 5554 to receive a text message containing that transaction number. Other command-and-control codes could be sent to obtain details about the target device:
+
+<figure>
+    <img src="/assets/img/week9/day2_dyn/mibanco_rcvdtext.png">
+    <figcaption>Receiving information from emulator with number 5554</figcaption>
+</figure>
+
+Interestingly, Mr. Ruiz noted that, on pre-Lollipop (Android 5.0) systems, the user of the target device would not see the intercepted messages - they would never know that their bank had sent an mTAN, for instance. On later versions, this vulnerability was fixed: hence, the target still received the intercepted messages, even if they had been compromised. 
+
+A quick static analysis of the mibanco_seguridad APK revealed interesting details in the decompiled .dex file. The SecurityReceiver class contained what appeared to be the central logic describing the behavior of the command and control messages - it appeared that prepending the messages with different characters would cause the infected device to provide different sets of data:
+
+<figure>
+    <img src="/assets/img/week9/day2_dyn/alternativecontrol.png">
+    <figcaption>Mibanco: Control message logic</figcaption>
+</figure> 
+
+## Session 3: Mobile Security Tools & Techniques
+
+This week's final session (and, in fact, the final session for the entire course) discussed some of the tools and techniques used by mobile malware authors. 
+
+We started with an overview of the _FakeInstaller_ malware family, the first known polymorphic server-side Android malware. It is similar to previously-discussed malware in that it hides itself by mimicking legitimate applications, although with each download server-side logic modifies the malware slightly, changing its hash. This significantly complicates hash-based detection with tools like VirusTotal. 
+
+Once downloaded, the malware itself sends SMS messages to premium-rate numbers, although the specific behavior and user interface differs slightly between FakeInstaller variants. Generally, opening the app in Android reveals a simulated "installation" graphic, along with an "agree" or "next" button that appear tied to a bogus license agreement. When one of these buttons is pressed, a premium-rate SMS message is sent from the target's device without their consent. FakeInstaller apps sometimes prevent the user from immediately exiting by locking the back button. 
+
+The server-side polymorphic mechanism itself typically doesn't change the actual behavior of the application - it simply changes image, config, or .dex files very slightly, modifying a byte or two in a way that doesn't corrupt the application itself. Extraneous no-op instructions could be added to the source code, for instance, or strings could be changed. Some variants implemented polymorphism in the form of daily changes to .dex files - strings and characters were updated each day, producing slightly different samples. Unused images could also be added to the assets folder of the APK. 
+
+Mr. Ruiz showed us a chart demonstrating a sharp rise in the number of FakeInstaller samples in 2012. This is partially due to the vast number of hashes generated by its polymorphic behavior; each new hash generated is considered a unique sample. 
+
+In addition to polymorphism, Android malware often uses some form of obfuscation to complicate decompilation and static analysis. .dex files can be obfuscated with special tools (such as _ProGuard_), producing scrambled or meaningless class names upon decompilation (such as the "f" class observed in the DroidDream sample above). Some samples use Base64 encoding, possibly in unison with other obfuscation techniques.
+
+### Dynamic and Remote Code Execution
+
+In addition to obfuscation, mobile malware can take advantage of vulnerabilities that allow for execution of arbitrary code by a remote assailant. Code can also be loaded dynamically via libraries, allowing for code not installed as part of an application to be executed through that app. 
+
+The very advanced _Anserverbot_ malware, discovered in September 2011, takes advantage of dynamic loading. Using a DexClassLoader API call, it dynamically loads a malicious payload after installation. Security software resident on the target device is detected and removed, after which commands are fetched from encrypted public blogs. Heavy obfuscation and data encryption are implemented in this malware, effectively disguising its purpose. 
+
+Anserverbot contains two payloads: anservera.db runs hidden from the user in the background; once it is running, however, it dynamically loads anserverb.db, a second APK pretending to be a SQLite database in the assets folder. This behavior was also observed in our analysis of the DroidDream malware above. 
+
+DexClassLoader is an interesting API call: it allows an application to dynamically load classes from .jar and .apk files containing a classes.dex entry, which in turn allows code to be executed that was not _installed_ within the application calling DexClassLoader. In this way, a seemingly "clean" app could be repackaged and bundled with malicious software. Malicious content could also be downloaded from the Internet, and installed by the "parent" app. Applications employing this  method are difficult to analyze statically, as download links could easily be changed or removed. 
+
+_Reflection_ is a Java language feature allowing for a program to examine its own classes and methods at runtime. The Class.forName() method can be used to dynamically instantiate new objects. It takes as a single argument a string corresponding to the name of the class to be loaded, and returns a matching Class object. Once an instance of that Class is created, Method.invoke() can be called for class methods associated with that object; in this way, features such as private API calls can be hidden from prying eyes (or malware researchers). This can again complicate static analysis, especially if the strings used in these method calls are encrypted.
+
+Mr. Ruiz continued with a discussion of the _Android WebView Addjsif_ (that is, _addJavascriptInterface_) exploit, which takes advantage of a vulnerability in Android WebVeiw objects. These objects are intended to allow Android applications to embed a web browser or web element. The vulnerability can be found in pre-KitKat Android versions, in which the WebView objects are based on the Webkit engine. The addJavascriptInterface() method is intended to [inject Java objects into a page's Javascript content][addjs-docs], but in so doing it can expose objects to untrusted Javascript code. An attacker could use this vulnerability to insert Java into a WebView application, which then accesses a Web page or application that contains an exploit or downloads another payload. 
+
+### Obfuscation Techniques
+
+Obfuscation can be implemented in a number of different ways, ranging from fairly simple replacement or renaming techniques to complex encryption schemes. 
+
+_Identifier renaming_ refers to the process of simply renaming variables, methods, and classes in confusing or meaningless or obscure names. Java is somewhat simple to reverse engineer, and so malware that doesn't implement at least basic renaming obfuscation can be trivial to analyze. 
+
+A number of professional obfuscation tools exist, with _ProGuard_ being one of the most popular packages. ProGuard can be integrated with the Android build system; upon execution, it strips "dead" (or, unused) code from an application, generating .txt files as output that map obfuscated source with its pre-obfuscation equivalent. This could be useful for a legitimate application that contains some private IP or closed-source components, but could also be useful for a malware author attempting to disguise their product. ProGuard also provides the _DexGuard_ software, which implements features like string encryption, class encryption, tamper detection, and so forth.
+
+"Junk Bytes" can also be inserted into compiled binary code to confuse static decompilers and disassemblers; among other things, these can be instructions that aren't reached during execution: extraneous "goto" statements after a return, for instance. 
+
+The manifest itself can be obfuscated, preventing easy inspection with XML viewers. If extraneous characters are inserted into binary XML, errors will be generated when the binary is reversed into "real" XML viewable in a browser. 
+
+_JEB_ is an interactive Android decompiler that provides a number of features useful in reversing encryped or obfuscated code, including built-in manifest decoder, an improved Dalvik decompiler, method, class, and variable renaming tools, and an API for automation and string decryption. It's very costly, however, and thus more appropriate for large-scale security outfits. 
+
+### Android Bootkits
+
+The first bootkit designed for Android was dubbed _Oldboot_, and was found in January 2014 installed in Chinese devices containing pre-installed system applications. Oldboot modifies /init.rc, the booting script used by Android devices, also dropping /sbin/imei_chk, a native ELF binary that allows for the installation of /system/app//GoogleKernel.apk, a malicious Android app installed as a system application, and /system/lib/googlekernel.so, a native library used by the GoogleKernel.apk malware.
+
+On system boot, the modified /init.rc script launches imei_chk as a system service. In turn, imei_chk extracts libgooglekernel.so into /system/lib and GoogleKernel.apk into /system/app. GoogleKernel.apk periodically executes code from libgooglekernel.so to generate commands; these commands are then passed to imei_chk to be executed. Because this malware is operating with root privileges, sockets can be created to establish lines of communication between its components, and any command sent to one of these sockets will be executed with root privileges. Because the setuid flag is set, any other app in the infected device can sends commands to imei_chk to execute them as root. Oldboot is installed in the /bin directory on the RAM disk, and so it can't be deleted; an attempt to delete it will just cause a fresh installation to appear on reboot.
+
+A similar method is used in the _FakeDebuggered_ malware, found in March 2014 installed in custom Chinese ROMs. Because it is already running as a system service, it doesn't need to modify init.rc; otherwise, its behavior is quite similar: dependent applications and processes send commands to the "parent" bootkit using sockets. These dependent applications filter data packets or downloaded content, intercept and forward SMS, and add advertisement widgets to the target's home screen. As with Oldboot, uninstallation will just cause a fresh installation to appear after rebooting.
+
+### Lab: Obad Static Analysis
+
+I concluded the third session with a static analysis of the _Obad_ malware, a family known for heavy obfuscation of its source code. Following the usual initial steps, I extracted the sample's APK into a directory, exploring its manifest (with a browser) and classes.dex file (with _jd-gui). Upon attempting to open the manifest, I was greeted with the following error:
+
+<figure>
+    <img src="/assets/img/week9/day3_static/malformedmanifest.png">
+    <figcaption>Obad: Obfuscated manifest</figcaption>
+</figure> 
+
+So, it appears that this sample obfuscates the manifest itself by introducing "junk bytes" into its binary representation. Opening with a text editor, I observed the content of the manifest:
+
+<figure>
+    <img src="/assets/img/week9/day3_static/manifestobfuscation.png">
+    <figcaption>Obad: Manifest opened in text editor</figcaption>
+</figure> 
+
+Many, many permissions could be observed, including RECEIVE_BOOT_COMPLETED, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, ACCESS_WIFI_STATE, and so forth. Interestingly, names of receivers and other components were obfuscated with a series of nonsensical characters (".0l0ClICl", for instance), clearly intended to mask their purpose. The presence of so much obfuscation along with the fairly wide range of privileges is immediately suspicious, and merits further investigation.
+
+Using the dex2jar decompiler, I decompiled the .dex file into Java source, using jd-gui to read through it. As suspected, the list of classes in the decompiled file was similarly obfuscated:
+
+<figure>
+    <img src="/assets/img/week9/day3_static/obfuscatedclasses.png">
+    <figcaption>Obad: obfuscated class names</figcaption>
+</figure> 
+
+As well as the code:
+
+<figure>
+    <img src="/assets/img/week9/day3_static/obfuscatedcode.png">
+    <figcaption>Obad: obfuscated Java code in MainService.class</figcaption>
+</figure> 
+
+Note that the .dex file could not decompile correctly - this is a sign of "junk bytes" being added to the .dex binaries after compilation. Although they don't affect the functionality of the malware sample, these junk bytes can "confuse" a decompiler trying to make sense of the binary files themselves. As such, jd-gui simply displays a stack trace as well as a set of .smali instructions, which are much more difficult to understand and analyze. 
+
+As the source code was obfuscated in this manner, I needed to use _apktool_ to extract Obad.apk into a directory, navigating to the directory containing the .smali representation of the MainService class (com/android/systems/admin/MainService.smali). Following the lab's instructions, I removed four extraneous "goto_0" instructions from MainService.smali. Then, I re-packaged the Obad directory into another APK with `java -jar ~/tools/apktool_2.0.0rc3.jar b Obad.out -o newobad.apk`. I again used jd-gui, observing the "corrected" classes.dex file: 
+
+<figure>
+    <img src="/assets/img/week9/day3_static/deobfuscatedcode.png">
+    <figcaption>Obad: deobfuscated code in MainService</figcaption>
+</figure> 
+
+So, the variable names themselves are still nonsense, but the logic of the program can, at least, be observed. 
+
+Following Mr. Ruiz's lecture, I attempted to perform a dynamic analysis of the application using an emulator (similar to previous labs). Unfortunately, however, the malware itself appears to be emulator-aware: it installs without issue, but attempting to start the app from the emulated device's home screen does nothing - no malicious behavior could be observed. This is reminiscent of the VM-aware malware discussed earlier in the course. To analyze this sample using an emulator, we would need to modify the emulator itself. 
+
+This marked the end of my work in Weeks 9 and 10, and by extension my work in CS373. I enjoyed this brief tour through the internals of mobile devices, along with the malware that targets them. 
+
+
+[ratc]: https://thesnkchrmr.wordpress.com/2011/03/24/rageagainstthecage/
+[hotplug-docs]: https://linux.die.net/man/8/hotplug
+[addjs-docs]: https://developer.android.com/reference/android/webkit/WebView.html
+
